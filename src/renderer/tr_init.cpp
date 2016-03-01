@@ -168,6 +168,8 @@ cvar_t *r_screenshotJpegQuality;
 cvar_t *r_convertModelBones;
 cvar_t *r_loadSkinsJKA;
 
+cvar_t *font_select;
+
 /*
 Ghoul2 Insert Start
 */
@@ -1326,6 +1328,8 @@ void R_Register( void )
 
 	r_convertModelBones = ri.Cvar_Get( "r_convertModelBones", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
 	r_loadSkinsJKA = ri.Cvar_Get( "r_loadSkinsJKA", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
+
+	font_select = ri.Cvar_Get( "font_select", "", CVAR_ARCHIVE );
 /*
 Ghoul2 Insert Start
 */
@@ -1350,6 +1354,8 @@ Ghoul2 Insert End
 	ri.Cmd_AddCommand( "gfxinfo", GfxInfo_f );
 	ri.Cmd_AddCommand("r_we", R_WorldEffect_f);
 	ri.Cmd_AddCommand( "imagecacheinfo", RE_RegisterImages_Info_f);
+	ri.Cmd_AddCommand( "font_save", R_FontSave_f);
+	ri.Cmd_AddCommand( "font_transform", R_FontTransform_f);
 #endif
 	ri.Cmd_AddCommand("modellist", R_Modellist_f);
 	ri.Cmd_AddCommand( "modelcacheinfo", RE_RegisterModels_Info_f);
@@ -1485,6 +1491,8 @@ void RE_Shutdown( qboolean destroyWindow ) {
 	ri.Cmd_RemoveCommand ("gfxinfo");
 	ri.Cmd_RemoveCommand ("r_we");
 	ri.Cmd_RemoveCommand ("imagecacheinfo");
+	ri.Cmd_RemoveCommand ("font_save");
+	ri.Cmd_RemoveCommand ("font_transform");
 
 	ri.Cmd_RemoveCommand ("modellist");
 	ri.Cmd_RemoveCommand ("modelcacheinfo");

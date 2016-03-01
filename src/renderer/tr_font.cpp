@@ -376,6 +376,11 @@ CFontInfo::CFontInfo(const char *fontName)
 		mAsianHack = fontdat->mKoreanHack;
 		mbRoundCalcs = !!strstr(fontName,"ergo");
 
+		heightDelta = 0;
+		horizOffsetDelta = 0;
+		horizAdvanceDelta = 0;
+		baselineDelta = 0;
+
 		ri.FS_FreeFile(buff);
 	}
 	else
@@ -413,6 +418,49 @@ int CFontInfo::GetNumVariants() {
 
 CFontInfo *CFontInfo::GetVariant(int index) {
 	return m_variants[index];
+}
+
+void CFontInfo::Transform(int x, int y, int advance, int lineHeight, int baseline)
+{
+	int i;
+
+	mPointSize += lineHeight;
+	// mHeight is used only for vertical positioning in jk2 code.
+	mHeight -= y;
+	mAscender -= baseline;
+	mDescender += baseline;
+	heightDelta -= y;
+	horizOffsetDelta += x;
+	horizAdvanceDelta += advance;
+	baselineDelta += baseline;
+
+	for (i = 0; i < GLYPH_COUNT; i++) {
+		mGlyphs[i].horizOffset += x;
+		mGlyphs[i].baseline += baseline;
+		mGlyphs[i].horizAdvance += advance;
+	}
+
+	Com_Printf("%s   X: %+d Y: %+d Advance: %+d Line Height: %d Baseline: %+d\n",
+			   m_sFontName, horizOffsetDelta, heightDelta,
+			   horizAdvanceDelta, mPointSize, baselineDelta);
+}
+
+void CFontInfo::SaveFontData()
+{
+	dfontdat_t	fontdat;
+	char		path[MAX_QPATH];
+
+	memcpy(fontdat.mGlyphs, mGlyphs, sizeof(fontdat.mGlyphs));
+	fontdat.mPointSize = mPointSize;
+	fontdat.mHeight = mHeight;
+	fontdat.mAscender = mAscender;
+	fontdat.mDescender = mDescender;
+	fontdat.mKoreanHack = mAsianHack;
+
+	Com_sprintf( path,  sizeof( path ), "%s.fontdat", m_sFontName );
+
+	Com_Printf( "Writing %s\n", path );
+	FS_WriteFile( path, (char *) &fontdat, sizeof(dfontdat_t) );
 }
 
 extern int Language_GetIntegerValue(void);
@@ -1024,6 +1072,57 @@ int RE_RegisterFont(const char *psName) {
 	}
 
 	return oriFontHandle;
+}
+
+void R_FontSave_f( void ) {
+	CFontInfo	*pFont;
+	int			iIndex = 0;
+
+	if (font_select->string[0] == '\0') {
+		Com_Printf( "Set font_select cvar to a name of font you wish to modify. Eg \"ergoec\", \"ocr_a\", \"anewhope\".\n");
+		return;
+	}
+
+	fontIndexMap_t::iterator it = fontIndexMap.find(font_select->string);
+	if (it != fontIndexMap.end() ) {
+		iIndex = (*it).second;
+	}
+	if (!iIndex) {
+		Com_Printf( "Unrecognized font %s\n", font_select->string );
+		return;
+	}
+
+	pFont = GetFont(iIndex);
+
+	pFont->SaveFontData();
+}
+
+void R_FontTransform_f( void ) {
+	CFontInfo	*pFont;
+	int			iIndex;
+
+	if (font_select->string[0] == '\0') {
+		Com_Printf( "Set font_select cvar to a name of font you wish to modify. Eg \"ergoec\", \"ocr_a\", \"anewhope\".\n");
+		return;
+	}
+
+	if (Cmd_Argc() < 2) {
+		Com_Printf( "Usage: font_transform [x [y [advance [line-height [baseline ...]\n"
+					"Example: `font_transform 0 -1' lowers font by 1 point.\n");
+		return;
+	}
+
+	fontIndexMap_t::iterator it = fontIndexMap.find(font_select->string);
+	if (it != fontIndexMap.end() ) {
+		iIndex = (*it).second;
+	} else {
+		Com_Printf( "Unrecognized font %s. Set font_select cvar to a name of font you wish to modify.\n", font_select->string );
+		return;
+	}
+
+	pFont = GetFont(iIndex);
+
+	pFont->Transform(atoi(Cmd_Argv(1)), atoi(Cmd_Argv(2)), atoi(Cmd_Argv(3)), atoi(Cmd_Argv(4)), atoi(Cmd_Argv(5)));
 }
 
 void R_InitFonts(void)

@@ -507,9 +507,9 @@ typedef struct
 {
 	short		width;					// number of pixels wide
 	short		height;					// number of scan lines
-	short		horizAdvance;			// number of pixels to advance to the next char
-	short		horizOffset;			// x offset into space to render glyph
-	int			baseline;				// y offset
+	short		horizAdvance;			// number of pixels to advance from pointer to the next char
+	short		horizOffset;			// x offset from pointer into space to render glyph
+	int			baseline;				// y offset from top of the glyph to baseline. Positive for 'j'.
 	float		s;						// x start tex coord
 	float		t;						// y start tex coord
 	float		s2;						// x end tex coord
@@ -524,12 +524,12 @@ typedef struct dfontdat_s
 {
 	glyphInfo_t		mGlyphs[GLYPH_COUNT];
 
-	short			mPointSize;
-	short			mHeight;				// max height of font
-	short			mAscender;
-	short			mDescender;
+	short			mPointSize;          // Line height in pixels. Affects shadows too.
+	short			mHeight;             // mAscender + mDescender. Affects vertical positioning.
+	short			mAscender;           // Highest ascent over the baseline.
+	short			mDescender;          // Lowest descent under the baseline. Positive integer.
 
-	short			mKoreanHack;
+	short			mKoreanHack;         // What?
 } dfontdat_t;
 
 /////////////////// fonts end ////////////////////////////////////

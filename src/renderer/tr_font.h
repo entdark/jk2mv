@@ -27,7 +27,10 @@ private:
 
 	int				mAsianHack;
 	// end of fontdat data
-
+	int				heightDelta;
+	int				horizOffsetDelta;
+	int				horizAdvanceDelta;
+	int				baselineDelta;
 
 	int				mShader;				// handle to the shader with the glyph
 
@@ -73,6 +76,8 @@ public:
 	bool AsianGlyphsAvailable(void) const { return !!(m_hAsianShaders[0]); }
 
 	void UpdateAsianIfNeeded( bool bForceReEval = false);
+	void Transform(int x, int y, int advance, int lineHeight, int baseline);
+	void SaveFontData();
 };
 
 void R_ShutdownFonts(void);
