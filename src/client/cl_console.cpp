@@ -764,8 +764,8 @@ void Con_DrawSolidConsole( float frac ) {
 	int iPixelHeightToAdvance = con.charHeight;
 	if (re.Language_IsAsian())
 	{
-		fFontScale = cls.xadjust * con.charWidth *
-			10.0f / re.Font_StrLenPixels("aaaaaaaaaa", iFontIndex, 1.0f);
+		fFontScale = cls.xadjust * con_scale->value;
+		// * con.charWidth * 10.0f / re.Font_StrLenPixels("aaaaaaaaaa", iFontIndex, 1.0f);
 		y *= cls.yadjust;
 		iPixelHeightToAdvance = 1.3 * re.Font_HeightPixels(iFontIndex, fFontScale);
 	}
