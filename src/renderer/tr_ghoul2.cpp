@@ -129,7 +129,7 @@ public:
 	int				surfaceNum;
 	surfaceInfo_v	&rootSList;
 	shader_t		*cust_shader;
-	int				fogNum;
+	int64_t			fogNum;
 	qboolean		personalModel;
 	mdxaBone_v		&bonePtr;
 	int				renderfx;
@@ -461,6 +461,10 @@ void G2_TransformBone (CTransformBone &TB)
 	boneInfo_v		&boneList = TB.rootBoneList;
 	int				i, j, boneListIndex;
 	int				angleOverride = 0;
+	int				incomingTime = TB.incomingTime;
+
+	if (abs(TB.incomingTime - tr.refdef.time) <= 1)
+		incomingTime = tr.refdef.time;
 
 #if DEBUG_G2_TIMING
 	bool printTiming=false;
@@ -487,7 +491,7 @@ void G2_TransformBone (CTransformBone &TB)
 
 		if (boneList[boneListIndex].flags & BONE_ANIM_BLEND)
 		{
-			float blendTime = TB.incomingTime - boneList[boneListIndex].blendStart;
+			float blendTime = (incomingTime - boneList[boneListIndex].blendStart) + tr.refdef.timeFraction;
 			// only set up the blend anim if we actually have some blend time left on this bone anim - otherwise we might corrupt some blend higher up the hiearchy
 			if (blendTime>=0.0f&&blendTime < boneList[boneListIndex].blendTime)
 			{
@@ -516,7 +520,7 @@ void G2_TransformBone (CTransformBone &TB)
 			}
 			else
 			{
-				time = (TB.incomingTime - boneList[boneListIndex].startTime) / 50.0f;
+				time = ((incomingTime - boneList[boneListIndex].startTime) + tr.refdef.timeFraction) / 50.0f;
 			}
 			if (time<0)
 			{
@@ -871,7 +875,7 @@ void G2_TransformBone (CTransformBone &TB)
 		if (boneOverride.boneBlendTime && (((boneOverride.boneBlendTime + boneOverride.boneBlendStart) < TB.incomingTime)))
 		{
 			// ok, we are supposed to be blending. Work out lerp
-			const float blendTime = TB.incomingTime - boneList[boneListIndex].boneBlendStart;
+			const float blendTime = (incomingTime - boneList[boneListIndex].boneBlendStart) + tr.refdef.timeFraction;
 			float blendLerp = (blendTime / boneList[boneListIndex].boneBlendTime);
 			if (blendLerp <= 1)
 			{
@@ -2146,7 +2150,8 @@ void RB_SurfaceGhoul( CRenderableSurface *surf ) {
 	// the glow is rendered _second_!!! If that changes, change this!
 	extern bool g_bRenderGlowingObjects;
 	extern bool g_bDynamicGlowSupported;
-	if ( !tess.shader->hasGlow || g_bRenderGlowingObjects || !g_bDynamicGlowSupported || !r_DynamicGlow->integer ) {
+	if ((!tess.shader->hasGlow || g_bRenderGlowingObjects || !g_bDynamicGlowSupported || !r_DynamicGlow->integer)
+	&& (!tr.capturingDofOrStereo || (tr.capturingDofOrStereo && tr.latestDofOrStereoFrame))) {
 		delete surf;
 	}
 

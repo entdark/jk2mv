@@ -368,7 +368,6 @@ if (BuildMVMP)
 		"client/FxSystem.cpp"
 		"client/FxTemplate.cpp"
 		"client/FxUtil.cpp"
-		"client/cl_avi.cpp"
 		"client/cl_cgame.cpp"
 		"client/cl_cin.cpp"
 		"client/cl_console.cpp"
@@ -384,6 +383,8 @@ if (BuildMVMP)
 		"client/snd_mem.cpp"
 		"client/snd_mix.cpp"
 		"client/snd_mp3.cpp"
+
+		"client/cl_mme.cpp"
 	)
 	source_group("client" FILES ${MVMPClientFiles})
 	set(MVMPFiles ${MVMPFiles} ${MVMPClientFiles})
@@ -449,6 +450,13 @@ if (BuildMVMP)
 		"renderer/tr_surface.cpp"
 		"renderer/tr_surfacesprites.cpp"
 		"renderer/tr_world.cpp"
+
+		"renderer/tr_mme.h"
+		"renderer/tr_mme.cpp"
+		"renderer/tr_mme_stereo.cpp"
+		"renderer/tr_mme_common.cpp"
+		"renderer/tr_mme_avi.cpp"
+		"renderer/tr_mme_sse2.cpp"
 	)
 	source_group("renderer" FILES ${MVMPRendererFiles})
 	set(MVMPFiles ${MVMPFiles} ${MVMPRendererFiles})

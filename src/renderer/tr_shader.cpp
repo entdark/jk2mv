@@ -3319,6 +3319,10 @@ static const char *FindShaderInShaderText( const char *shadername ) {
 }
 
 
+const char *R_FindShaderText(const char *shadername) {
+	return FindShaderInShaderText(shadername);
+}
+
 /*
 ==================
 R_FindShaderByName

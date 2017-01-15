@@ -81,11 +81,13 @@ int RE_RegisterFont(const char *psName);
 int RE_Font_StrLenPixels(const char *psText, const int iFontHandle, float fScale = 1.0f);
 int RE_Font_StrLenChars(const char *psText);
 int RE_Font_HeightPixels(const int iFontHandle, float fScale = 1.0f);
-void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, int iFontHandle, int iCharLimit, float fScale = 1.0f);
+void RE_Font_DrawString(float ox, float oy, const char *psText, const float *rgba, const int iFontHandle, int iCharLimit, const float fScale = 1.0f);
 qboolean Language_IsAsian(void);
 qboolean Language_UsesSpaces(void);
 unsigned int AnyLanguage_ReadCharFromString( const char *psText, int *piAdvanceCount, qboolean *pbIsTrailingPunctuation/* = NULL*/ );
 
+
+void RE_FontRatioFix(const float ratio);
 
 
 #endif	// #ifndef TR_FONT_H

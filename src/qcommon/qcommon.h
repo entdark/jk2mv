@@ -596,11 +596,14 @@ qboolean FS_AllPath_Base_FileExists(const char *file);
 
 int		FS_LoadStack();
 
+qboolean FS_FileErase( const char *file );
+
 int		FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
 int		FS_GetModList(  char *listbuf, int bufsize );
 
 fileHandle_t	FS_FOpenFileWrite( const char *qpath );
 fileHandle_t FS_FOpenBaseFileWrite(const char *filename);
+fileHandle_t	FS_FDirectOpenFileWrite( const char *filename, const char *mode );
 // will properly create any needed paths and deal with seperater character issues
 
 int		FS_filelength( fileHandle_t f );
@@ -699,6 +702,10 @@ const char *FS_MV_VerifyDownloadPath(const char *pk3file);
 int FS_GetDLList(dlfile_t *files, int maxfiles);
 qboolean FS_RMDLPrefix(const char *qpath);
 qboolean FS_DeleteDLFile(const char *qpath);
+
+fileHandle_t FS_PipeOpen(const char *qcmd, const char *qpath, const char *mode);
+void FS_PipeClose(fileHandle_t f);
+int FS_PipeWrite(const void *buffer, int len, fileHandle_t f);
 
 /*
 ==============================================================

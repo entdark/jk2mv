@@ -286,6 +286,8 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 	tr.frameCount++;
 	tr.frameSceneNum = 0;
 
+	backEnd.sceneZfar = 2048.0f;
+
 	//
 	// do overdraw measurement
 	//
@@ -372,6 +374,15 @@ void RE_BeginFrame( stereoFrame_t stereoFrame ) {
 			ri.Error( ERR_FATAL, "RE_BeginFrame() - glGetError() failed (0x%x)!\n", err );
 		}
 	}
+	
+	if ( mme_worldShader->modified) {
+		if (R_FindShaderText( mme_worldShader->string )) {
+			tr.mmeWorldShader = R_FindShader( mme_worldShader->string, lightmapsNone, stylesDefault, qtrue );
+		} else {
+			tr.mmeWorldShader = 0;
+		}
+		mme_worldShader->modified = qfalse;
+	}
 
 	//
 	// draw buffer stuff
@@ -435,29 +446,3 @@ void RE_EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	backEnd.pc.msec = 0;
 }
 
-
-/*
-=============
-RE_TakeVideoFrame
-=============
-*/
-void RE_TakeVideoFrame( int width, int height, qboolean motionJpeg, int motionJpegQuality )
-{
-	videoFrameCommand_t	*cmd;
-
-	if( !tr.registered ) {
-		return;
-	}
-
-	cmd = (videoFrameCommand_t *)R_GetCommandBuffer( sizeof( *cmd ) );
-	if( !cmd ) {
-		return;
-	}
-
-	cmd->commandId = RC_VIDEOFRAME;
-
-	cmd->width = width;
-	cmd->height = height;
-	cmd->motionJpeg = motionJpeg;
-	cmd->motionJpegQuality = motionJpegQuality;
-}

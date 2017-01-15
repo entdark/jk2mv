@@ -718,6 +718,15 @@ CFontInfo *RE_Font_GetVariant(CFontInfo *font, float *scale) {
 	return font;
 }
 
+
+static float fontRatioFix = 1.0f;
+void RE_FontRatioFix(const float ratio) {
+	if (ratio <= 0.0f)
+		fontRatioFix = 1.0f;
+	else
+		fontRatioFix = ratio;
+}
+
 int RE_Font_StrLenPixels(const char *psText, const int iFontHandle, float fScale)
 {			
 	int			i = 0;
@@ -765,7 +774,7 @@ int RE_Font_StrLenPixels(const char *psText, const int iFontHandle, float fScale
 
 		constParseText += iAdvanceCount;
 		iPixelAdvance = curfont->GetLetterHorizAdvance(uiLetter);
-		fTotalWidth += (iPixelAdvance * ((uiLetter > 255) ? fScaleA : fScale));
+		fTotalWidth += (iPixelAdvance * ((uiLetter > 255) ? fScaleA : fScale)) * fontRatioFix;
 	}
 
 	return (int)(ceilf(fTotalWidth));
@@ -816,10 +825,10 @@ int RE_Font_HeightPixels(const int iFontHandle, float fScale)
 //
 qboolean gbInShadow = qfalse;	// MUST default to this
 extern cvar_t	*mv_coloredTextShadows;
-void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, int iFontHandle, int iCharLimit, float fScale)
+void RE_Font_DrawString(float ox, float oy, const char *psText, const float *rgba, int iFontHandle, int iCharLimit, float fScale)
 {
-	int					colour, offset;
-	float				fox, foy, fx, fy;
+	float				fox, foy, fx, fy, offset;
+	int					colour;
 	const glyphInfo_t	*pLetter;
 	qhandle_t			hShader;
 	qboolean			qbThisCharCountsAsLetter;	// logic for this bool must be kept same in this function and RE_Font_StrLenChars()
@@ -873,7 +882,7 @@ void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, i
 			}
 			dropShadowText[r] = 0;
 
-			RE_Font_DrawString(ox + offset, oy + offset, dropShadowText, v4DKGREY2, iFontHandle & SET_MASK, iCharLimit, fScale);
+			RE_Font_DrawString(ox + offset * fontRatioFix, oy + offset, dropShadowText, v4DKGREY2, iFontHandle & SET_MASK, iCharLimit, fScale);
 		}
 		else
 		{
@@ -882,7 +891,7 @@ void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, i
 			offset = Round(curfont->GetPointSize() * fScale * 0.075f);
 
 			gbInShadow = qtrue;
-			RE_Font_DrawString(ox + offset, oy + offset, psText, v4DKGREY2, iFontHandle & SET_MASK, iCharLimit, fScale);
+			RE_Font_DrawString(ox + offset * fontRatioFix, oy + offset, psText, v4DKGREY2, iFontHandle & SET_MASK, iCharLimit, fScale);
 			gbInShadow = qfalse;
 		}
 	}
@@ -908,9 +917,11 @@ void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, i
 		{
 		case '^':
 			colour = ColorIndex(*psText);
-			if (!gbInShadow)
-			{
-				RE_SetColor( g_color_table[colour] );
+			if (!gbInShadow || (MV_GetCurrentGameversion() == VERSION_1_02)) {
+				vec4_t color;
+				Com_Memcpy(color, g_color_table[colour], sizeof(color));
+				color[3] = rgba[3];
+				RE_SetColor(color);
 			}
 			++psText;
 			break;
@@ -923,7 +934,7 @@ void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, i
 		case 32:						// Space
 			qbThisCharCountsAsLetter = qtrue;
 			pLetter = curfont->GetLetter(' ');
-			fx += (float)pLetter->horizAdvance * fScale;
+			fx += (float)pLetter->horizAdvance * fScale * fontRatioFix;
 			break;
 
 		default:
@@ -943,7 +954,7 @@ void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, i
 
 			RE_StretchPic ( fx + (float)pLetter->horizOffset * fThisScale, // float x
 							(uiLetter > 255) ? fy - iAsianYAdjust : fy,	// float y
-							(float)pLetter->width * fThisScale,	// float w
+							(float)pLetter->width * fThisScale * fontRatioFix,	// float w
 							(float)pLetter->height * fThisScale, // float h
 							pLetter->s,						// float s1
 							pLetter->t,						// float t1
@@ -952,7 +963,7 @@ void RE_Font_DrawString(int ox, int oy, const char *psText, const float *rgba, i
 							hShader							// qhandle_t hShader
 							);
 
-			fx += (float)pLetter->horizAdvance * fThisScale;
+			fx += (float)pLetter->horizAdvance * fThisScale * fontRatioFix;
 			break;
 		}
 

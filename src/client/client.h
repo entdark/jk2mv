@@ -229,6 +229,8 @@ typedef struct {
 
 	// big stuff at end of structure so most offsets are 15 bits or less
 	netchan_t	netchan;
+
+	float		aviDemoRemain;		// Used for accurate fps recording
 } clientConnection_t;
 
 extern	clientConnection_t clc;
@@ -429,9 +431,7 @@ extern	cvar_t	*m_side;
 extern	cvar_t	*m_filter;
 
 extern	cvar_t	*cl_timedemo;
-extern	cvar_t	*cl_aviFrameRate;
-extern	cvar_t	*cl_aviMotionJpeg;
-extern  cvar_t  *cl_aviMotionJpegQuality;
+extern	cvar_t	*cl_avidemo;
 
 extern	cvar_t	*cl_activeAction;
 
@@ -443,6 +443,21 @@ extern	cvar_t	*mv_menuOverride;
 
 extern	cvar_t	*cl_autoDemo;
 extern	cvar_t	*cl_autoDemoFormat;
+
+
+// MME cvars
+//extern	cvar_t	*mme_anykeystopsdemo;
+extern	cvar_t	*mme_saveWav;
+//extern	cvar_t	*mme_gameOverride;
+extern	cvar_t	*mme_demoConvert;
+extern	cvar_t	*mme_demoSmoothen;
+extern	cvar_t	*mme_demoFileName;
+extern  cvar_t	*mme_demoListQuit;
+extern	cvar_t	*mme_demoStartProject;
+extern	cvar_t	*mme_demoAutoQuit;
+extern	cvar_t	*mme_demoRemove;
+extern	cvar_t	*mme_demoPrecache;
+extern	cvar_t	*mme_demoAutoNext;
 
 //=================================================
 
@@ -649,12 +664,8 @@ extern void demoAutoComplete(void);
 extern void demoAutoRecord(void);
 extern void demoAutoInit(void);
 
+
 //
-// cl_avi.c
+// cl_mme.c
 //
-qboolean CL_OpenAVIForWriting( const char *filename );
-void CL_TakeVideoFrame( void );
-void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size );
-void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size );
-qboolean CL_CloseAVI( void );
-qboolean CL_VideoRecording( void );
+void CL_MME_CheckCvarChanges(void);

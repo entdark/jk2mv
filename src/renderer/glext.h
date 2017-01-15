@@ -3239,6 +3239,15 @@ typedef void (APIENTRYP PFNGLGETPROGRAMLOCALPARAMETERFVARBPROC) (GLenum target, 
 typedef void (APIENTRYP PFNGLGETPROGRAMIVARBPROC) (GLenum target, GLenum pname, GLint *params);
 typedef void (APIENTRYP PFNGLGETPROGRAMSTRINGARBPROC) (GLenum target, GLenum pname, void *string);
 typedef GLboolean (APIENTRYP PFNGLISPROGRAMARBPROC) (GLuint program);
+//teh's PBO
+typedef void (APIENTRY * PFNGLGENBUFFERSARBPROC) (GLsizei n, GLuint* ids);
+typedef void (APIENTRY * PFNGLBINDBUFFERARBPROC) (GLenum target, GLuint id);
+typedef void (APIENTRY * PFNGLBUFFERDATAARBPROC) (GLenum target, GLsizei size, const void* data, GLenum usage);
+typedef void *(APIENTRY * PFNGLMAPBUFFERARBPROC) (GLenum target, GLenum access);
+typedef GLboolean(APIENTRY * PFNGLUNMAPBUFFERARBPROC) (GLenum target);
+#define GL_READ_ONLY_ARB                  0x88B8
+#define GL_STREAM_READ_ARB                0x88E1
+#define GL_PIXEL_PACK_BUFFER_ARB          0x88EB
 #ifdef GL_GLEXT_PROTOTYPES
 GLAPI void APIENTRY glProgramStringARB (GLenum target, GLenum format, GLsizei len, const void *string);
 GLAPI void APIENTRY glBindProgramARB (GLenum target, GLuint program);

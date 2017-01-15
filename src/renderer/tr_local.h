@@ -22,7 +22,8 @@ typedef unsigned int glIndex_t;
 // parallel on a dual cpu machine
 #define	SMP_FRAMES		2
 
-#define	MAX_SHADERS				2048
+#define SHADERNUM_BITS	14
+#define MAX_SHADERS		(1<<SHADERNUM_BITS)
 
 #define MAX_SHADER_STATES 2048
 #define MAX_STATES_PER_SHADER 32
@@ -425,7 +426,7 @@ typedef struct shader_s {
 	byte		styles[MAXLIGHTMAPS];
 
 	int			index;					// this shader == tr.shaders[index]
-	int			sortedIndex;			// this shader == tr.sortedShaders[sortedIndex]
+	int64_t		sortedIndex;			// this shader == tr.sortedShaders[sortedIndex]
 
 	float		sort;					// lower numbered shaders draw before higher numbered
 
@@ -481,8 +482,8 @@ Ghoul2 Insert End
 
 	void		(*optimalStageIteratorFunc)( void );
 
-	float clampTime;                                  // time this shader is clamped to
-	float timeOffset;                                 // current time offset for this shader
+	double clampTime;                                  // time this shader is clamped to
+	double timeOffset;                                 // current time offset for this shader
 
 	int numStates;                                    // if non-zero this is a state shader
 	struct shader_s *currentShader;                   // current state if this is a state shader
@@ -545,12 +546,12 @@ typedef struct {
 	byte		areamask[MAX_MAP_AREA_BYTES];
 	qboolean	areamaskModified;	// qtrue if areamask changed since last scene
 
-	float		floatTime;			// tr.refdef.time / 1000.0
+	double		floatTime;			// tr.refdef.time / 1000.0
 
 	// text messages for deform text shaders
 	char		text[MAX_RENDER_STRINGS][MAX_RENDER_STRING_LENGTH];
 
-	int			num_entities;
+	int64_t		num_entities;
 	trRefEntity_t	*entities;
 	trMiniRefEntity_t	*miniEntities;
 
@@ -562,7 +563,8 @@ typedef struct {
 
 	int			numDrawSurfs;
 	struct drawSurf_s	*drawSurfs;
-
+	
+	float		timeFraction;
 
 } trRefdef_t;
 
@@ -648,7 +650,7 @@ Ghoul2 Insert End
 } surfaceType_t;
 
 typedef struct drawSurf_s {
-	unsigned			sort;			// bit combination for fast compares
+	uint64_t			sort;			// bit combination for fast compares
 	surfaceType_t		*surface;		// any of surface*_t
 } drawSurf_t;
 
@@ -662,7 +664,7 @@ typedef struct drawSurf_s {
 typedef struct srfPoly_s {
 	surfaceType_t	surfaceType;
 	qhandle_t		hShader;
-	int				fogIndex;
+	int64_t			fogIndex;
 	int				numVerts;
 	polyVert_t		*verts;
 } srfPoly_t;
@@ -771,7 +773,7 @@ BRUSH MODELS
 typedef struct msurface_s {
 	int					viewCount;		// if == tr.viewCount, already added
 	struct shader_s		*shader;
-	int					fogIndex;
+	int64_t				fogIndex;
 
 	surfaceType_t		*data;			// any of srf*_t
 } msurface_t;
@@ -945,9 +947,15 @@ the bits are allocated as follows:
 //2		: used to be clipped flag REMOVED - 03.21.00 rad
 0 - 1	: dlightmap index
 */
-#define	QSORT_SHADERNUM_SHIFT	21
-#define	QSORT_ENTITYNUM_SHIFT	11
+//#define	QSORT_SHADERNUM_SHIFT	21
+//#define	QSORT_ENTITYNUM_SHIFT	11
+//#define	QSORT_FOGNUM_SHIFT		2
 #define	QSORT_FOGNUM_SHIFT		2
+#define	QSORT_REFENTITYNUM_SHIFT	7
+#define	QSORT_SHADERNUM_SHIFT	(QSORT_REFENTITYNUM_SHIFT+REFENTITYNUM_BITS)
+#if (QSORT_SHADERNUM_SHIFT+SHADERNUM_BITS) > 64
+	#error "Need to update sorting, too many bits."
+#endif
 
 /*
 ** performanceCounters_t
@@ -967,6 +975,9 @@ typedef struct {
 #define FUNCTABLE_SIZE		1024
 #define FUNCTABLE_SIZE2		10
 #define FUNCTABLE_MASK		(FUNCTABLE_SIZE-1)
+
+float NewSinTable(double jediOutcast);
+float NewCosTable(double jediOutcast);
 
 
 // the renderer front end should never modify glstate_t
@@ -1013,6 +1024,8 @@ typedef struct {
 	};
 	qboolean	vertexes2D;		// shader needs to be finished
 	trRefEntity_t	entity2D;	// currentEntity will point at this when doing 2D rendering
+	//mme
+	float			sceneZfar;
 } backEndState_t;
 
 /*
@@ -1076,8 +1089,8 @@ typedef struct {
 
 	trRefEntity_t			*currentEntity;
 	trRefEntity_t			worldEntity;		// point currentEntity at this when rendering world
-	int						currentEntityNum;
-	int						shiftedEntityNum;	// currentEntityNum << QSORT_ENTITYNUM_SHIFT
+	int64_t					currentEntityNum;
+	int64_t					shiftedEntityNum;	// currentEntityNum << QSORT_ENTITYNUM_SHIFT
 	model_t					*currentModel;
 
 	viewParms_t				viewParms;
@@ -1113,6 +1126,7 @@ typedef struct {
 	int						numShaders;
 	shader_t				*shaders[MAX_SHADERS];
 	shader_t				*sortedShaders[MAX_SHADERS];
+	shader_t				*mmeWorldShader;
 
 	int						numSkins;
 	skin_t					*skins[MAX_SKINS];
@@ -1127,6 +1141,10 @@ typedef struct {
 	// gamma correction
 	GLuint gammaVertexShader, gammaPixelShader;
 	GLuint gammaLUTImage;
+
+	qboolean finishStereo;
+	qboolean capturingDofOrStereo;
+	qboolean latestDofOrStereoFrame;
 } trGlobals_t;
 
 
@@ -1154,6 +1172,8 @@ extern cvar_t	*r_verbose;				// used for verbose debug spew
 extern cvar_t	*r_ignoreFastPath;		// allows us to ignore our Tess fast paths
 
 extern cvar_t	*r_znear;				// near Z clip plane
+extern cvar_t	*r_zproj;				// z distance of projection plane
+extern cvar_t	*r_stereoSeparation;	// separation of cameras for stereo capture
 
 extern cvar_t	*r_stencilbits;			// number of desired stencil bits
 extern cvar_t	*r_depthbits;			// number of desired depth bits
@@ -1282,8 +1302,10 @@ extern	cvar_t	*r_printShaders;
 extern	cvar_t	*r_convertModelBones;
 extern	cvar_t	*r_loadSkinsJKA;
 
-extern cvar_t	*r_customwidth;
-extern cvar_t	*r_customheight;
+extern	cvar_t	*r_customwidth;
+extern	cvar_t	*r_customheight;
+
+extern	cvar_t	*r_drawAllAreas;
 
 /*
 Ghoul2 Insert Start
@@ -1293,18 +1315,51 @@ extern	cvar_t	*r_noServerGhoul2;
 Ghoul2 Insert End
 */
 
-extern	cvar_t *r_consoleFont;
-extern	cvar_t *r_fontSharpness;
-extern	cvar_t *r_textureLODBias;
-extern	cvar_t *r_saberGlow;
+extern	cvar_t	*r_consoleFont;
+extern	cvar_t	*r_fontSharpness;
+extern	cvar_t	*r_textureLODBias;
+extern	cvar_t	*r_saberGlow;
 //====================================================================
 
-float R_NoiseGet4f( float x, float y, float z, float t );
+
+//new MME cvars
+extern cvar_t	*mme_screenShotFormat;
+extern cvar_t	*mme_screenShotGamma;
+extern cvar_t	*mme_screenShotAlpha;
+extern cvar_t	*mme_jpegQuality;
+extern cvar_t	*mme_jpegDownsampleChroma;
+extern cvar_t	*mme_jpegOptimizeHuffman;
+extern cvar_t	*mme_tgaCompression;
+extern cvar_t	*mme_pngCompression;
+extern cvar_t	*mme_skykey;
+extern cvar_t	*mme_worldShader;
+extern cvar_t	*mme_pip;
+extern cvar_t	*mme_renderWidth;
+extern cvar_t	*mme_renderHeight;
+extern cvar_t	*mme_blurFrames;
+extern cvar_t	*mme_blurType;
+extern cvar_t	*mme_blurOverlap;
+extern cvar_t	*mme_blurGamma;
+extern cvar_t	*mme_cpuSSE2;
+extern cvar_t	*mme_pbo;
+extern cvar_t	*mme_workMegs;
+extern cvar_t	*mme_depthRange;
+extern cvar_t	*mme_depthFocus;
+extern cvar_t	*mme_saveOverwrite;
+extern cvar_t	*mme_saveStencil;
+extern cvar_t	*mme_saveShot;
+extern cvar_t	*mme_saveDepth;
+
+
+float R_NoiseGet4f( float x, float y, float z, double t );
 void  R_NoiseInit( void );
 
 void R_SwapBuffers( int );
 
 void R_RenderView( viewParms_t *parms );
+
+void R_SetupProjection( void );
+void R_SetupFrustum (void);
 
 void R_AddMD3Surfaces( trRefEntity_t *e );
 void R_AddNullModelSurfaces( trRefEntity_t *e );
@@ -1314,10 +1369,9 @@ void R_AddLightningBoltSurfaces( trRefEntity_t *e );
 
 void R_AddPolygonSurfaces( void );
 
-void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
-					 int *fogNum, int *dlightMap );
+void R_DecomposeSort( uint64_t sort, int64_t *entityNum, shader_t **shader, int64_t *fogNum, int64_t *dlightMap );
 
-void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap );
+void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int64_t fogIndex, int64_t dlightMap );
 
 
 #define	CULL_IN		0		// completely unclipped
@@ -1331,6 +1385,7 @@ int R_CullPointAndRadius( vec3_t origin, float radius );
 int R_CullLocalPointAndRadius( vec3_t origin, float radius );
 
 void R_RotateForEntity( const trRefEntity_t *ent, const viewParms_t *viewParms, orientationr_t *ori );
+void R_RotateForWorld ( const orientationr_t* input, orientationr_t* world );
 
 /*
 ** GL wrapper/helper functions
@@ -1428,7 +1483,7 @@ void		R_GammaCorrect( byte *buffer, int bufSize );
 
 void	R_ImageList_f( void );
 void	R_SkinList_f( void );
-void	R_ScreenShot_f( void );
+const void *RB_ScreenShotCmd(const void *data);
 
 void	R_InitFogTable( void );
 float	R_FogFactor( float s, float t );
@@ -1437,8 +1492,6 @@ void	R_DeleteTextures( void );
 float	R_SumOfUsedImages( qboolean bUseFormat );
 void	R_InitSkins( void );
 skin_t	*R_GetSkinByHandle( qhandle_t hSkin );
-
-byte *RB_ReadPixels(int x, int y, int width, int height, size_t *offset, qboolean swapRB, int packAlign);
 
 //
 // tr_shader.c
@@ -1458,6 +1511,8 @@ shader_t	*R_FindShader( const char *name, const int *lightmapIndex, const byte *
 shader_t	*R_GetShaderByHandle( qhandle_t hShader );
 // shader_t	*R_GetShaderByState( int index, int *cycleTime );
 shader_t *R_FindShaderByName( const char *name );
+//mme
+const char	*R_FindShaderText(const char *shadername);
 void		R_InitShaders( void );
 void		R_ShaderList_f( void );
 void	R_RemapShader(const char *oldShader, const char *newShader, const char *timeOffset);
@@ -1510,7 +1565,7 @@ struct shaderCommands_s
 	color4ub_t	constantColor255[SHADER_MAX_VERTEXES];
 
 	shader_t	*shader;
-  float   shaderTime;
+	double   shaderTime;
 	int			fogNum;
 
 	int			dlightBits;	// or together of all vertexDlightBits
@@ -1547,9 +1602,6 @@ void RB_AddQuadStamp( vec3_t origin, vec3_t left, vec3_t up, byte *color );
 void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, float s1, float t1, float s2, float t2 );
 
 void RB_ShowImages( void );
-
-void RB_TakeScreenshot(int x, int y, int width, int height, const char *fileName);
-void RB_TakeScreenshotJPEG(int x, int y, int width, int height, const char *fileName);
 
 /*
 ============================================================
@@ -1818,21 +1870,17 @@ typedef struct {
 
 typedef struct {
 	int		commandId;
-	int		width;
-	int		height;
-	qboolean	motionJpeg;
-	int		motionJpegQuality;
-} videoFrameCommand_t;
+	char	name[MAX_OSPATH];
+	mmeShotFormat_t format;
+} screenShotCommand_t;
 
 typedef struct {
 	int		commandId;
-	int		x;
-	int		y;
-	int		width;
-	int		height;
-	char	fileName[MAX_OSPATH]; // large but we don't take screenshots too often
-	qboolean	jpeg;
-} screenshotCommand_t;
+	char	name[MAX_OSPATH];
+	float	fps;
+	float	focus;
+	float	radius;
+} captureCommand_t;
 
 typedef enum {
 	RC_END_OF_LIST,
@@ -1843,16 +1891,18 @@ typedef enum {
 	RC_DRAW_SURFS,
 	RC_DRAW_BUFFER,
 	RC_SWAP_BUFFERS,
-	RC_VIDEOFRAME,
 	RC_SCREENSHOT,
+	RC_CAPTURE,
+	RC_CAPTURE_STEREO,
 } renderCommand_t;
 
 
 // these are sort of arbitrary limits.
 // the limits apply to the sum of all scenes in a frame --
 // the main view, all the 3D icons, etc
-#define	MAX_POLYS		600
-#define	MAX_POLYVERTS	3000
+#define	POLYS_FACTOR	4
+#define	MAX_POLYS		600*POLYS_FACTOR
+#define	MAX_POLYVERTS	3000*POLYS_FACTOR
 
 // all of the information needed by the back end must be
 // contained in a backEndData_t.  This entire structure is
@@ -1861,7 +1911,7 @@ typedef enum {
 typedef struct {
 	drawSurf_t	drawSurfs[MAX_DRAWSURFS];
 	dlight_t	dlights[MAX_DLIGHTS];
-	trRefEntity_t	entities[MAX_ENTITIES];
+	trRefEntity_t	entities[MAX_REFENTITIES];
 	trMiniRefEntity_t	miniEntities[MAX_MINI_ENTITIES];
 	srfPoly_t	*polys;//[MAX_POLYS];
 	polyVert_t	*polyVerts;//[MAX_POLYVERTS];
@@ -1893,10 +1943,6 @@ void RE_RotatePic2 ( float x, float y, float w, float h,
 					  float s1, float t1, float s2, float t2,float a, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );
-void SaveJPG(const char * filename, int quality, int image_width, int image_height, byte *image_buffer, int padding);
-size_t SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality, int image_width,
-	int image_height, byte *image_buffer, int padding);
-void RE_TakeVideoFrame( int width, int height, qboolean motionJpeg, int motionJpegQuality );
 
 /*
 Ghoul2 Insert Start
@@ -1916,3 +1962,32 @@ Ghoul2 Insert End
 void RB_DrawSurfaceSprites( shaderStage_t *stage, shaderCommands_t *input);
 #endif
 #endif //TR_LOCAL_H
+
+
+//MME
+int SaveJPG( int quality, int image_width, int image_height, mmeShotType_t image_type, byte *image_buffer, byte *out_buffer, int out_size );
+int SaveTGA( int image_compressed, int image_width, int image_height, mmeShotType_t image_type, byte *image_buffer, byte *out_buffer, int out_size );
+int SavePNG( int compresslevel, int image_width, int image_height, mmeShotType_t image_type, byte *image_buffer, byte *out_buffer, int out_size );
+
+void R_MME_Init(void);
+void R_MME_InitStereo(void);
+void R_MME_Shutdown(void);
+void R_MME_ShutdownStereo(void);
+qboolean R_MME_TakeShot( void );
+qboolean R_MME_TakeShotStereo( void );
+const void *R_MME_CaptureShotCmd( const void *data );
+const void *R_MME_CaptureShotCmdStereo( const void *data );
+void R_MME_Capture( const char *shotName, float fps, float focus, float radius );
+void R_MME_CaptureStereo( const char *shotName, float fps, float focus, float radius );
+void R_MME_BlurInfo( int* total, int* index );
+void R_MME_JitterView( float *pixels, float* eyes );
+void R_MME_JitterViewStereo( float *pixels, float* eyes );
+qboolean R_MME_JitterOrigin( float *x, float *y );
+qboolean R_MME_JitterOriginStereo( float *x, float *y );
+
+int R_MME_MultiPassNext( );
+int R_MME_MultiPassNextStereo( );
+
+void R_MME_DoNotTake( );
+
+void R_MME_TimeFraction(float timeFraction);

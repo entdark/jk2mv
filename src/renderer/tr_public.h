@@ -82,7 +82,7 @@ typedef struct {
 	int		(*Font_StrLenPixels) (const char *text, const int iFontIndex, const float scale);
 	int		(*Font_StrLenChars) (const char *text);
 	int		(*Font_HeightPixels)(const int iFontIndex, const float scale);
-	void	(*Font_DrawString)(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
+	void	(*Font_DrawString)(float ox, float oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
 	qboolean (*Language_IsAsian)(void);
 	qboolean (*Language_UsesSpaces)(void);
 	unsigned int (*AnyLanguage_ReadCharFromString)( const char *psText, int *piAdvanceCount, qboolean *pbIsTrailingPunctuation/* = NULL*/ );
@@ -95,8 +95,14 @@ typedef struct {
 	void (*SetLightStyle)(int style, int color);
 
 	void	(*GetBModelVerts)( int bmodelIndex, vec3_t *vec, vec3_t normal );
-
-	void (*TakeVideoFrame)( int h, int w, qboolean motionJpeg, int motionJpegQuality );
+	
+	//mme
+	void	(*Capture)( const char *baseName, float fps, float focus, float radius );
+	void	(*CaptureStereo)( const char *baseName, float fps, float focus, float radius );
+	void	(*BlurInfo)( int* total, int* index );
+	void	(*TimeFraction)( float timeFraction );
+	void	(*FontRatioFix)( float ratio );
+	void	(*DemoRandomSeed)( int time, float timeFraction );
 } refexport_t;
 
 //
@@ -130,6 +136,7 @@ typedef struct {
 	cvar_t	*(*Cvar_Get)( const char *name, const char *value, int flags );
 	void	(*Cvar_Set)( const char *name, const char *value );
 	void	(*Cvar_SetValue)( const char *name, float value );
+	char	*(*Cvar_VariableString)( const char *var_name );
 
 	void	(*Cmd_AddCommand)( const char *name, void(*cmd)(void) );
 	void	(*Cmd_RemoveCommand)( const char *name );
@@ -152,13 +159,21 @@ typedef struct {
 	void	(*FS_FreeFileList)( char **filelist );
 	void	(*FS_WriteFile)( const char *qpath, const void *buffer, int size );
 	qboolean (*FS_FileExists)( const char *file );
-
+	
+	void	(*FS_FCloseFile)( fileHandle_t f );
+	qboolean (*FS_FileErase)( const char *file );
+	int		(*FS_Seek)( fileHandle_t f, int offset, int origin );
+	int		(*FS_Write)( const void *buffer, int len, fileHandle_t f );
+	fileHandle_t (*FS_FDirectOpenFileWrite)( const char *filename, const char *mode );
+	
+    fileHandle_t (*FS_PipeOpen)(const char *qcmd, const char *qpath, const char *mode);
+    void	(*FS_PipeClose)(fileHandle_t f);
+    int		(*FS_PipeWrite)(const void *buffer, int len, fileHandle_t f);
+    
 	// cinematic stuff
 	void	(*CIN_UploadCinematic)(int handle);
 	int		(*CIN_PlayCinematic)( const char *arg0, int xpos, int ypos, int width, int height, int bits);
 	e_status (*CIN_RunCinematic) (int handle);
-
-	void	(*CL_WriteAVIVideoFrame)( const byte *buffer, int size );
 
 	int (*CM_PointContents)( const vec3_t p, clipHandle_t model );
 

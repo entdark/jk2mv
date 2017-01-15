@@ -12,7 +12,7 @@ static	int			r_firstSceneDrawSurf;
 static	int			r_numdlights;
 static	int			r_firstSceneDlight;
 
-static	int			r_numentities;
+static	int64_t		r_numentities;
 static	int			r_firstSceneEntity;
 static	int			r_numminientities;
 static	int			r_firstSceneMiniEntity;
@@ -82,8 +82,8 @@ void R_AddPolygonSurfaces( void ) {
 	shader_t	*sh;
 	srfPoly_t	*poly;
 
-	tr.currentEntityNum = ENTITYNUM_WORLD;
-	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_ENTITYNUM_SHIFT;
+	tr.currentEntityNum = REFENTITYNUM_WORLD;
+	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_REFENTITYNUM_SHIFT;
 
 	for ( i = 0, poly = tr.refdef.polys; i < tr.refdef.numPolys ; i++, poly++ ) {
 		sh = R_GetShaderByHandle( poly->hShader );
@@ -178,7 +178,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 	if ( !tr.registered ) {
 		return;
 	}
-	if ( r_numentities >= MAX_ENTITIES ) {
+	if ( r_numentities >= MAX_REFENTITIES ) {
 		return;
 	}
 	if ( ent->reType < 0 || ent->reType >= RT_MAX_REF_ENTITY_TYPE ) {
@@ -365,6 +365,7 @@ Rendering a scene may require multiple views to be rendered
 to handle mirrors,
 @@@@@@@@@@@@@@@@@@@@@
 */
+static qboolean timeFractionSet = qfalse;
 void RE_RenderScene( const refdef_t *fd ) {
 	viewParms_t		parms;
 	int				startTime;
@@ -400,6 +401,9 @@ void RE_RenderScene( const refdef_t *fd ) {
 	VectorCopy( fd->viewaxis[2], tr.refdef.viewaxis[2] );
 
 	tr.refdef.time = fd->time;
+	if (!timeFractionSet)
+		tr.refdef.timeFraction = 0.0f;
+	timeFractionSet = qfalse;
 	tr.refdef.frametime = fd->time - lastTime;
 	lastTime = fd->time;
 	if (tr.refdef.frametime > 500)
@@ -435,7 +439,7 @@ void RE_RenderScene( const refdef_t *fd ) {
 
 	// derived info
 
-	tr.refdef.floatTime = tr.refdef.time * 0.001f;
+	tr.refdef.floatTime = tr.refdef.time * 0.001;
 
 	tr.refdef.numDrawSurfs = r_firstSceneDrawSurf;
 	tr.refdef.drawSurfs = backEndData->drawSurfs;
@@ -500,4 +504,9 @@ void RE_RenderScene( const refdef_t *fd ) {
 	refEntParent = -1;
 
 	tr.frontEndMsec += ri.Milliseconds() - startTime;
+}
+
+void R_MME_TimeFraction(float timeFraction) {
+	tr.refdef.timeFraction = timeFraction;
+	timeFractionSet = qtrue;
 }

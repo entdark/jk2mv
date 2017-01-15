@@ -43,9 +43,7 @@ cvar_t	*cl_drawRecording;
 cvar_t	*cl_shownet;
 cvar_t	*cl_showSend;
 cvar_t	*cl_timedemo;
-cvar_t	*cl_aviFrameRate;
-cvar_t	*cl_aviMotionJpeg;
-cvar_t	*cl_aviMotionJpegQuality;
+cvar_t	*cl_avidemo;
 cvar_t	*cl_forceavidemo;
 
 cvar_t	*cl_freelook;
@@ -126,74 +124,6 @@ void CL_CheckForResend( void );
 void CL_ShowIP_f(void);
 void CL_ServerStatus_f(void);
 void CL_ServerStatusResponse( netadr_t from, msg_t *msg );
-
-/*
-===============
-CL_Video_f
-
-video
-video [filename]
-===============
-*/
-void CL_Video_f( void )
-{
-	char  filename[ MAX_OSPATH ];
-	int   i, last;
-
-	if( !clc.demoplaying )
-		{
-			Com_Printf( "The video command can only be used when playing back demos\n" );
-			return;
-		}
-
-	if( Cmd_Argc( ) == 2 )
-		{
-			// explicit filename
-			Com_sprintf( filename, MAX_OSPATH, "videos/%s.avi", Cmd_Argv( 1 ) );
-		}
-	else
-		{
-			// scan for a free filename
-			for( i = 0; i <= 9999; i++ )
-				{
-					int a, b, c, d;
-
-					last = i;
-
-					a = last / 1000;
-					last -= a * 1000;
-					b = last / 100;
-					last -= b * 100;
-					c = last / 10;
-					last -= c * 10;
-					d = last;
-
-					Com_sprintf( filename, MAX_OSPATH, "videos/video%d%d%d%d.avi",
-						     a, b, c, d );
-
-					if( !FS_FileExists( filename ) )
-						break; // file doesn't exist
-				}
-
-			if( i > 9999 )
-				{
-					Com_Printf( S_COLOR_RED "ERROR: no free file names to create video\n" );
-					return;
-				}
-		}
-
-	CL_OpenAVIForWriting( filename );
-}
-
-/*
-===============
-CL_StopVideo_f
-===============
-*/
-void CL_StopVideo_f( void )
-{
-	CL_CloseAVI( );
-}
 
 /*
 =======================================================================
@@ -710,8 +640,6 @@ CL_ShutdownAll
 void CL_ShutdownAll(void) {
 	CL_KillDownload();
 
-	// stop recording
-	CL_CloseAVI();
 	// clear sounds
 	S_DisableSounds();
 	// shutdown CGame
@@ -895,12 +823,6 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	// not connected to a pure server anymore
 	cl_connectedToPureServer = qfalse;
-
-	if( CL_VideoRecording( ) ) {
-		// Finish rendering current frame
-		SCR_UpdateScreen( );
-		CL_CloseAVI( );
-	}
 }
 
 
@@ -1355,8 +1277,6 @@ doesn't know what graphics to reload
 */
 void CL_Vid_Restart_f( void ) {
 
-	// Settings may have changed so stop recording now
-	CL_CloseAVI( );
 	// don't let them loop during the restart
 	S_StopAllSounds();
 	// shutdown the UI
@@ -2527,22 +2447,32 @@ void CL_Frame ( int msec ) {
 	}
 
 	// if recording an avi, lock to a fixed fps
-	if ( CL_VideoRecording() && cl_aviFrameRate->integer && msec) {
+	if (cl_avidemo->integer > 0 && msec) {
 		// save the current screen
-		if ( cls.state == CA_ACTIVE || cl_forceavidemo->integer) {
-			static double	overflow = 0.0;
-			double			frameTime;
-
-			CL_TakeVideoFrame();
-
-			frameTime = (1000.0 / abs(cl_aviFrameRate->integer)) * com_timescale->value;
-			frameTime += overflow;
-
-			msec = floor(frameTime);
-			if (msec == 0)
-				msec = 1;
-
-			overflow = frameTime - msec;
+		if (cls.state == CA_ACTIVE || cl_forceavidemo->integer) {
+			float frameTime, fps;
+			int blurFrames = Cvar_VariableIntegerValue("mme_blurFrames");
+			char shotName[MAX_OSPATH];
+			Com_sprintf( shotName, sizeof( shotName ), "capture/%s/%s", mme_demoFileName->string, Cvar_VariableString("mov_captureName") );
+			if (blurFrames < 1)
+				blurFrames = 1;
+			else if (blurFrames > 256)
+				blurFrames = 256;
+			// fixed time for next frame'
+			fps = cl_avidemo->integer * com_timescale->value * (float)blurFrames;
+//			if ( fps > 1000.0f)
+//				fps = 1000.0f;
+			frameTime = (1000.0f / fps);
+			if (frameTime < 0) {
+				frameTime = 0;
+			}
+			//TODO use mme_depthFocus
+			re.Capture( shotName, fps, 0, 0 );
+			frameTime += clc.aviDemoRemain;
+			msec = (int)frameTime;
+			clc.aviDemoRemain = frameTime - msec;
+			/* Signal this frame to be recorded */
+//			S_MMERecord(shotName, 1.0f / fps);
 		}
 	}
 
@@ -2591,6 +2521,9 @@ void CL_Frame ( int msec ) {
 	// if we haven't gotten a packet in a long time,
 	// drop the connection
 	CL_CheckTimeout();
+	
+	// MME:
+	CL_MME_CheckCvarChanges();
 
 	// send intentions now
 	CL_SendCmd();
@@ -2779,17 +2712,27 @@ void CL_InitRef( void ) {
 	ri.FS_ListFiles = FS_ListFiles;
 	ri.FS_FileIsInPAK = FS_FileIsInPAK;
 	ri.FS_FileExists = FS_FileExists;
+
+	ri.FS_FCloseFile = FS_FCloseFile;
+	ri.FS_FileErase = FS_FileErase;
+	ri.FS_Seek = FS_Seek;
+	ri.FS_Write = FS_Write;
+	ri.FS_FDirectOpenFileWrite = FS_FDirectOpenFileWrite;
+	
+    ri.FS_PipeOpen = FS_PipeOpen;
+    ri.FS_PipeClose = FS_PipeClose;
+    ri.FS_PipeWrite = FS_PipeWrite;
+    
 	ri.Cvar_Get = Cvar_Get;
 	ri.Cvar_Set = Cvar_Set;
 	ri.Cvar_SetValue = Cvar_SetValue;
+	ri.Cvar_VariableString = Cvar_VariableString;
 
 	// cinematic stuff
 
 	ri.CIN_UploadCinematic = CIN_UploadCinematic;
 	ri.CIN_PlayCinematic = CIN_PlayCinematic;
 	ri.CIN_RunCinematic = CIN_RunCinematic;
-
-	ri.CL_WriteAVIVideoFrame = CL_WriteAVIVideoFrame;
 
 	ri.CM_PointContents = CM_PointContents;
 
@@ -2873,9 +2816,7 @@ void CL_Init( void ) {
 	cl_drawRecording = Cvar_Get ("cl_drawRecording", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
 
 	cl_timedemo = Cvar_Get ("timedemo", "0", 0);
-	cl_aviFrameRate = Cvar_Get ("cl_aviFrameRate", "30", CVAR_ARCHIVE);
-	cl_aviMotionJpeg = Cvar_Get ("cl_aviMotionJpeg", "1", CVAR_ARCHIVE);
-	cl_aviMotionJpegQuality = Cvar_Get("cl_aviMotionJpegQuality", "90", CVAR_ARCHIVE);
+	cl_avidemo = Cvar_Get ("cl_avidemo", "0", 0);
 	cl_forceavidemo = Cvar_Get ("cl_forceavidemo", "0", 0);
 
 	rconAddress = Cvar_Get ("rconAddress", "", 0);
@@ -2952,6 +2893,18 @@ void CL_Init( void ) {
 	// autorecord
 	cl_autoDemo = Cvar_Get ("cl_autoDemo", "0", CVAR_ARCHIVE | CVAR_GLOBAL );
 	cl_autoDemoFormat = Cvar_Get ("cl_autoDemoFormat", "%t_%m", CVAR_ARCHIVE | CVAR_GLOBAL );
+	
+	// MME cvars
+	mme_saveWav = Cvar_Get ("mme_saveWav", "2", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoConvert = Cvar_Get ("mme_demoConvert", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoListQuit = Cvar_Get ("mme_demoListQuit", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoSmoothen = Cvar_Get ("mme_demoSmoothen", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoFileName = Cvar_Get ("mme_demoFileName", "", CVAR_TEMP | CVAR_NORESTART );
+	mme_demoStartProject = Cvar_Get ("mme_demoStartProject", "", CVAR_TEMP );
+	mme_demoAutoQuit = Cvar_Get ("mme_demoAutoQuit", "0", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoRemove = Cvar_Get ("mme_demoRemove", "0", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoPrecache = Cvar_Get ("mme_demoPrecache", "0", CVAR_ARCHIVE | CVAR_GLOBAL );
+	mme_demoAutoNext = Cvar_Get ("mme_demoAutoNext", "1", CVAR_ARCHIVE | CVAR_GLOBAL );
 
 	// mv cvars
 	mv_slowrefresh = Cvar_Get("mv_slowrefresh", "3", CVAR_ARCHIVE | CVAR_GLOBAL);
@@ -2996,8 +2949,6 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("forcepowers", CL_SetForcePowers_f );
 	Cmd_AddCommand ("saveDemo", demoAutoSave_f);
 	Cmd_AddCommand ("saveDemoLast", demoAutoSaveLast_f);
-	Cmd_AddCommand ("video", CL_Video_f);
-	Cmd_AddCommand ("stopvideo", CL_StopVideo_f);
 
 	CL_InitRef();
 
@@ -3075,8 +3026,6 @@ void CL_Shutdown( void ) {
 	Cmd_RemoveCommand ("forcepowers");
 	Cmd_RemoveCommand ("saveDemo");
 	Cmd_RemoveCommand ("saveDemoLast");
-	Cmd_RemoveCommand ("video");
-	Cmd_RemoveCommand ("stopvideo");
 
 	Cvar_Set( "cl_running", "0" );
 

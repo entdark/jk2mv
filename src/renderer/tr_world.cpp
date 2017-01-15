@@ -37,7 +37,7 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 		return qtrue;
 	}
 
-	if ( tr.currentEntityNum != ENTITYNUM_WORLD ) {
+	if ( tr.currentEntityNum != REFENTITYNUM_WORLD ) {
 		sphereCull = R_CullLocalPointAndRadius( cv->localOrigin, cv->meshRadius );
 	} else {
 		sphereCull = R_CullPointAndRadius( cv->localOrigin, cv->meshRadius );
@@ -261,6 +261,7 @@ R_AddWorldSurface
 ======================
 */
 static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
+	shader_t *shader;
 	if ( surf->viewCount == tr.viewCount ) {
 		return;		// already in this view
 	}
@@ -278,8 +279,12 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits ) {
 		dlightBits = R_DlightSurface( surf, dlightBits );
 		dlightBits = ( dlightBits != 0 );
 	}
+	if (tr.mmeWorldShader)
+		shader = tr.mmeWorldShader;
+	else
+		shader = surf->shader;
 
-	R_AddDrawSurf( surf->data, surf->shader, surf->fogIndex, dlightBits );
+	R_AddDrawSurf( surf->data, shader, surf->fogIndex, dlightBits );
 }
 
 /*
@@ -697,8 +702,10 @@ static void R_MarkLeaves (void) {
 		}
 
 		// check for door connection
-		if ( (tr.refdef.areamask[leaf->area>>3] & (1<<(leaf->area&7)) ) ) {
-			continue;		// not visible
+		if (!r_drawAllAreas->integer) {
+			if ((tr.refdef.areamask[leaf->area >> 3] & (1 << (leaf->area & 7)))) {
+				continue;		// not visible
+			}
 		}
 
 		parent = leaf;
@@ -726,8 +733,8 @@ void R_AddWorldSurfaces (void) {
 		return;
 	}
 
-	tr.currentEntityNum = ENTITYNUM_WORLD;
-	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_ENTITYNUM_SHIFT;
+	tr.currentEntityNum = REFENTITYNUM_WORLD;
+	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_REFENTITYNUM_SHIFT;
 
 	// determine which leaves are in the PVS / areamask
 	R_MarkLeaves ();

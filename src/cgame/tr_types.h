@@ -5,8 +5,15 @@
 
 
 #define	MAX_DLIGHTS		32			// can't be increased, because bit flags are used on surfaces
-#define	MAX_ENTITIES	1023		// can't be increased without changing drawsurf bit packing
-#define	MAX_MINI_ENTITIES	1024
+
+#define	REFENTITYNUM_BITS	16		// can't be increased without changing drawsurf bit packing
+#define	REFENTITYNUM_MASK	((1<<REFENTITYNUM_BITS) - 1)
+// the last N-bit number (2^REFENTITYNUM_BITS - 1) is reserved for the special world refentity,
+//  and this is reflected by the value of MAX_REFENTITIES (which therefore is not a power-of-2)
+#define	MAX_REFENTITIES		((1<<REFENTITYNUM_BITS) - 1)
+#define	REFENTITYNUM_WORLD	((1<<REFENTITYNUM_BITS) - 1)
+
+#define	MAX_MINI_ENTITIES	1<<12
 
 // renderfx flags
 #define	RF_MINLIGHT			0x00001	// allways have some light (viewmodel, some items)
@@ -364,6 +371,22 @@ typedef struct {
 #define OPENGL_DRIVER_NAME	"opengl32"
 
 #endif	// !defined _WIN32
+
+
+typedef enum {
+	mmeShotFormatTGA,
+	mmeShotFormatJPG,
+	mmeShotFormatPNG,
+	mmeShotFormatAVI,
+	mmeShotFormatPIPE,
+} mmeShotFormat_t;
+
+typedef enum {
+	mmeShotTypeRGB,
+	mmeShotTypeRGBA,
+	mmeShotTypeGray,
+	mmeShotTypeBGR,
+} mmeShotType_t;
 
 
 #endif	// __TR_TYPES_H

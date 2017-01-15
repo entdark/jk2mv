@@ -403,16 +403,93 @@ static void RB_Hyperspace( void ) {
 }
 
 
-void SetViewportAndScissor( void ) {
+static void SetFinalProjection(void) {
+	float	xmin, xmax, ymin, ymax;
+	float	width, height, depth;
+	float	zNear, zFar, zProj, stereoSep;
+	float	dx, dy;
+	vec2_t	pixelJitter, eyeJitter;
+
+	//
+	// set up projection matrix
+	//
+	zNear = r_znear->value;
+	zFar = backEnd.viewParms.zFar;
+
+	zProj = r_zproj->value;
+	stereoSep = r_stereoSeparation->value;
+
+	ymax = zNear * tan(backEnd.viewParms.fovY * M_PI / 360.0f);
+	ymin = -ymax;
+
+	xmax = zNear * tan(backEnd.viewParms.fovX * M_PI / 360.0f);
+	xmin = -xmax;
+
+	width = xmax - xmin;
+	height = ymax - ymin;
+	depth = zFar - zNear;
+
+	pixelJitter[0] = pixelJitter[1] = 0;
+	eyeJitter[0] = eyeJitter[1] = 0;
+	/* Jitter the view */
+	if (stereoSep <= 0.0f) {
+		R_MME_JitterView(pixelJitter, eyeJitter);
+	}
+	else if (stereoSep > 0.0f) {
+		R_MME_JitterViewStereo(pixelJitter, eyeJitter);
+	}
+
+	dx = (pixelJitter[0] * width) / backEnd.viewParms.viewportWidth;
+	dy = (pixelJitter[1] * height) / backEnd.viewParms.viewportHeight;
+	dx += eyeJitter[0];
+	dy += eyeJitter[1];
+
+	xmin += dx; xmax += dx;
+	ymin += dy; ymax += dy;
+
 	qglMatrixMode(GL_PROJECTION);
-	qglLoadMatrixf( backEnd.viewParms.projectionMatrix );
+	qglPushMatrix();
+	qglLoadIdentity();
+	qglFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
+	qglGetFloatv(GL_PROJECTION_MATRIX, backEnd.viewParms.projectionMatrix);
+	qglPopMatrix();
+
+	backEnd.viewParms.projectionMatrix[0] = 2 * zNear / width;
+	backEnd.viewParms.projectionMatrix[4] = 0;
+	backEnd.viewParms.projectionMatrix[8] = (xmax + xmin + 2 * stereoSep) / width;	// normally 0
+	backEnd.viewParms.projectionMatrix[12] = 2 * zProj * stereoSep / width;
+
+	backEnd.viewParms.projectionMatrix[1] = 0;
+	backEnd.viewParms.projectionMatrix[5] = 2 * zNear / height;
+	backEnd.viewParms.projectionMatrix[9] = (ymax + ymin) / height;	// normally 0
+	backEnd.viewParms.projectionMatrix[13] = 0;
+
+	backEnd.viewParms.projectionMatrix[2] = 0;
+	backEnd.viewParms.projectionMatrix[6] = 0;
+	backEnd.viewParms.projectionMatrix[10] = -(zFar + zNear) / depth;
+	backEnd.viewParms.projectionMatrix[14] = -2 * zFar * zNear / depth;
+
+	backEnd.viewParms.projectionMatrix[3] = 0;
+	backEnd.viewParms.projectionMatrix[7] = 0;
+	backEnd.viewParms.projectionMatrix[11] = -1;
+	backEnd.viewParms.projectionMatrix[15] = 0;
+}
+
+void SetViewportAndScissor(void) {
+	qglMatrixMode(GL_PROJECTION);
+
+	R_SetupFrustum();
+	R_SetupProjection();
+	SetFinalProjection();
+
+	qglLoadMatrixf(backEnd.viewParms.projectionMatrix);
 	qglMatrixMode(GL_MODELVIEW);
 
 	// set the window clipping
-	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
-		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
-	qglScissor( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
-		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
+	qglViewport(backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
+		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight);
+	qglScissor(backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
+		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight);
 }
 
 /*
@@ -460,12 +537,19 @@ void RB_BeginDrawingView (void) {
 	}
 	if ( r_fastsky->integer && !( backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) && !g_bRenderGlowingObjects )
 	{
-		clearBits |= GL_COLOR_BUFFER_BIT;	// FIXME: only if sky shaders have been used
+		if (mme_skykey->string[0] != '0') {
+			vec3_t skyColor;
+			clearBits |= GL_COLOR_BUFFER_BIT;
+			Q_parseColor( mme_skykey->string, defaultColors, skyColor );
+			qglClearColor( skyColor[0], skyColor[1], skyColor[2], 1.0f );
+		} else if (r_fastsky->integer) {
+			clearBits |= GL_COLOR_BUFFER_BIT;	// FIXME: only if sky shaders have been used
 #ifdef _DEBUG
-		qglClearColor( 0.8f, 0.7f, 0.4f, 1.0f );	// FIXME: get color of sky
+			qglClearColor( 0.8f, 0.7f, 0.4f, 1.0f );	// FIXME: get color of sky
 #else
-		qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );	// FIXME: get color of sky
+			qglClearColor( 0.0f, 0.0f, 0.0f, 1.0f );	// FIXME: get color of sky
 #endif
+		}
 	}
 
 	if ( /*tr.refdef.rdflags & RDF_AUTOMAP ||*/ (!( backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) && r_DynamicGlow->integer && !g_bRenderGlowingObjects ) )
@@ -536,13 +620,13 @@ RB_RenderDrawSurfList
 */
 void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	shader_t		*shader, *oldShader;
-	int				fogNum, oldFogNum;
-	int				entityNum, oldEntityNum;
-	int				dlighted, oldDlighted;
+	int64_t			fogNum, oldFogNum;
+	int64_t			entityNum, oldEntityNum;
+	int64_t			dlighted, oldDlighted;
 	int				depthRange, oldDepthRange;
 	int				i;
 	drawSurf_t		*drawSurf;
-	int				oldSort;
+	uint64_t		oldSort;
 	float			originalTime;
 	bool			didShadowPass = false;
 
@@ -564,7 +648,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	oldFogNum = -1;
 	oldDepthRange = qfalse;
 	oldDlighted = qfalse;
-	oldSort = -1;
+	oldSort = (uint64_t)-1;
 	depthRange = qfalse;
 
 	backEnd.pc.c_surfaces += numDrawSurfs;
@@ -610,7 +694,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		if ( entityNum != oldEntityNum ) {
 			depthRange = 0;
 
-			if ( entityNum != ENTITYNUM_WORLD ) {
+			if ( entityNum != REFENTITYNUM_WORLD ) {
 				backEnd.currentEntity = &backEnd.refdef.entities[entityNum];
 				backEnd.refdef.floatTime = originalTime - backEnd.currentEntity->e.shaderTime;
 				// we have to reset the shaderTime as well otherwise image animations start
@@ -962,6 +1046,8 @@ const void *RB_RotatePic ( const void *data )
 		qglPushMatrix();
 
 		qglTranslatef(cmd->x+cmd->w,cmd->y,0);
+		//entTODO: enable ratio fix with MV API
+//		qglScalef((640.0*glConfig.vidHeight) / (480.0*glConfig.vidWidth), 1.0, 1.0);
 		qglRotatef(cmd->a, 0.0, 0.0, 1.0);
 
 		GL_Bind( image );
@@ -1062,7 +1148,19 @@ const void	*RB_DrawSurfs( const void *data ) {
 
 	backEnd.refdef = cmd->refdef;
 	backEnd.viewParms = cmd->viewParms;
+	//Jitter the camera origin
+	if (!backEnd.viewParms.isPortal && !(backEnd.refdef.rdflags & RDF_NOWORLDMODEL)) {
+		float x, y;
+		if ((r_stereoSeparation->value <= 0 && R_MME_JitterOrigin(&x, &y))
+			|| (r_stereoSeparation->value > 0 && R_MME_JitterOriginStereo(&x, &y))) {
+			orientationr_t* wor = &backEnd.viewParms.ori;
+			orientationr_t* world = &backEnd.viewParms.world;
 
+			VectorMA(wor->origin, x, wor->axis[1], wor->origin);
+			VectorMA(wor->origin, y, wor->axis[2], wor->origin);
+			R_RotateForWorld(wor, world);
+		}
+	}
 	RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
 	if ( !(backEnd.refdef.rdflags & RDF_NOWORLDMODEL) && g_bDynamicGlowSupported && r_DynamicGlow->integer )
@@ -1284,7 +1382,22 @@ const void	*RB_SwapBuffers( const void *data ) {
 	RB_RenderWorldEffects();
 
 	cmd = (const swapBuffersCommand_t *)data;
+	
+	backEnd.projection2D = qfalse;
 
+	tr.capturingDofOrStereo = qfalse;
+	tr.latestDofOrStereoFrame = qfalse;
+
+	/* Take and merge DOF frames */
+	if ( r_stereoSeparation->value <= 0.0f && !tr.finishStereo) {
+		if ( R_MME_MultiPassNext() ) {
+			return (const void *)NULL;
+		}
+	} else if ( r_stereoSeparation->value > 0.0f) {
+		if ( R_MME_MultiPassNextStereo() ) {
+			return (const void *)NULL;
+		}
+	}
 	// we measure overdraw by reading back the stencil buffer and
 	// counting up the number of increments that have happened
 	if ( r_measureOverdraw->integer ) {
@@ -1302,8 +1415,29 @@ const void	*RB_SwapBuffers( const void *data ) {
 		backEnd.pc.c_overDraw += sum;
 		ri.Hunk_FreeTempMemory( stencilReadback );
 	}
-
-	backEnd.projection2D = qfalse;
+	
+	/* Allow MME to take a screenshot */
+	if ( r_stereoSeparation->value < 0.0f && tr.finishStereo) {
+		tr.capturingDofOrStereo = qtrue;
+		tr.latestDofOrStereoFrame = qtrue;
+		Cvar_SetValue("r_stereoSeparation", -r_stereoSeparation->value);
+		return (const void *)NULL;
+	} else if ( r_stereoSeparation->value <= 0.0f) {
+		if ( R_MME_TakeShot( ) && r_stereoSeparation->value != 0.0f) {
+			tr.capturingDofOrStereo = qtrue;
+			tr.latestDofOrStereoFrame = qfalse;
+			Cvar_SetValue("r_stereoSeparation", -r_stereoSeparation->value);
+			tr.finishStereo = qtrue;
+			return (const void *)NULL;
+		}
+	} else if ( r_stereoSeparation->value > 0.0f) {
+		if ( tr.finishStereo) {
+			R_MME_TakeShotStereo( );
+			R_MME_DoNotTake( );
+			Cvar_SetValue("r_stereoSeparation", -r_stereoSeparation->value);
+			tr.finishStereo = qfalse;
+		}
+	}
 
 	if (!glState.finishCalled) {
 		qglFinish();
@@ -1318,78 +1452,6 @@ const void	*RB_SwapBuffers( const void *data ) {
 
 
 /*
-==================
-RB_TakeVideoFrameCmd
-==================
-*/
-const void *RB_TakeVideoFrameCmd( const void *data )
-{
-	const videoFrameCommand_t	*cmd;
-	byte	*buffer;
-	byte	*captureBuffer;
-	size_t	offset;
-	size_t	memcount, linelen;
-	int		padwidth, padlen;
-
-	cmd = (const videoFrameCommand_t *)data;
-
-	offset = 0;
-	buffer = RB_ReadPixels(0, 0, cmd->width, cmd->height, &offset,
-		(qboolean) !cmd->motionJpeg, AVI_LINE_PADDING);
-	captureBuffer = buffer + offset;
-
-	// AVI line padding
-	linelen = cmd->width * 3;
-	padwidth = PAD(linelen, AVI_LINE_PADDING);
-	padlen = padwidth - linelen;
-	memcount = padwidth * cmd->height;
-
-	if(cmd->motionJpeg)
-	{
-		byte	*buffer2;
-		byte	*encodeBuffer;
-
-		buffer2 = (byte *)ri.Hunk_AllocateTempMemory(memcount + AVI_LINE_PADDING - 1);
-		encodeBuffer = (byte *)PADP(buffer2, AVI_LINE_PADDING);
-
-		memcount = SaveJPGToBuffer(encodeBuffer, linelen * cmd->height,
-			cmd->motionJpegQuality,
-			cmd->width, cmd->height, captureBuffer, padlen);
-
-		ri.CL_WriteAVIVideoFrame(encodeBuffer, memcount);
-
-		ri.Hunk_FreeTempMemory(buffer2);
-	}
-	else
-	{
-		ri.CL_WriteAVIVideoFrame(captureBuffer, memcount);
-	}
-
-	ri.Hunk_FreeTempMemory(buffer);
-
-	return (const void *)(cmd + 1);
-}
-
-/*
-==================
-RB_TakeScreenshotCmd
-==================
-*/
-const void *RB_TakeScreenshotCmd( const void *data )
-{
-	const screenshotCommand_t	*cmd;
-
-	cmd = (const screenshotCommand_t *)data;
-
-	if (cmd->jpeg)
-		RB_TakeScreenshotJPEG(cmd->x, cmd->y, cmd->width, cmd->height, cmd->fileName);
-	else
-		RB_TakeScreenshot(cmd->x, cmd->y, cmd->width, cmd->height, cmd->fileName);
-
-	return (const void *)(cmd + 1);
-}
-
-/*
 ====================
 RB_ExecuteRenderCommands
 
@@ -1397,94 +1459,56 @@ This function will be called syncronously if running without
 smp extensions, or asyncronously by another thread.
 ====================
 */
-void RB_ExecuteRenderCommands( const void *data ) {
-	const void	*dataOrig = data;
-	qboolean	firstPassDone = qfalse;
-	qboolean	secondPassDone = qtrue;
+void RB_ExecuteRenderCommands( const void *oldData) {
 	int			t1, t2;
+	const void* data;
 
 	t1 = ri.Milliseconds()*Cvar_VariableValue("timescale");
 
-	while (!firstPassDone) {
-		switch ( *(const int *)data ) {
+again:
+	data = oldData;
+	while (1) {
+		switch (*(const int *)data) {
 		case RC_SET_COLOR:
-			data = RB_SetColor( data );
+			data = RB_SetColor(data);
 			break;
 		case RC_STRETCH_PIC:
-			data = RB_StretchPic( data );
+			data = RB_StretchPic(data);
 			break;
 		case RC_ROTATE_PIC:
-			data = RB_RotatePic( data );
+			data = RB_RotatePic(data);
 			break;
 		case RC_ROTATE_PIC2:
-			data = RB_RotatePic2( data );
+			data = RB_RotatePic2(data);
 			break;
 		case RC_DRAW_SURFS:
-			data = RB_DrawSurfs( data );
+			data = RB_DrawSurfs(data);
 			break;
 		case RC_DRAW_BUFFER:
-			data = RB_DrawBuffer( data );
+			data = RB_DrawBuffer(data);
 			break;
 		case RC_SWAP_BUFFERS:
-			data = RB_SwapBuffers( data );
-			break;
-		case RC_VIDEOFRAME:
-			secondPassDone = qfalse;
-			data = (videoFrameCommand_t *)data + 1;
+			data = RB_SwapBuffers(data);
+			if ((int)data == 0)
+				goto again;
 			break;
 		case RC_SCREENSHOT:
-			secondPassDone = qfalse;
-			data = (screenshotCommand_t *)data + 1;
-		case RC_END_OF_LIST:
-			firstPassDone = qtrue;
+			data = RB_ScreenShotCmd(data);
 			break;
-		default:
-			ri.Error(ERR_DROP, "Unknown render command");
-		}
-	}
-
-	data = dataOrig;
-
-	while (!secondPassDone) {
-		switch ( *(const int *)data ) {
-		case RC_SET_COLOR:
-			data = (setColorCommand_t *)data + 1;
+		case RC_CAPTURE:
+			data = R_MME_CaptureShotCmd(data);
 			break;
-		case RC_STRETCH_PIC:
-			data = (stretchPicCommand_t *)data + 1;
-			break;
-		case RC_ROTATE_PIC:
-			data = (rotatePicCommand_t *)data + 1;
-			break;
-		case RC_ROTATE_PIC2:
-			data = (rotatePicCommand_t *)data + 1;
-			break;
-		case RC_DRAW_SURFS:
-			data =(drawSurfsCommand_t *)data + 1;
-			break;
-		case RC_DRAW_BUFFER:
-			data = (drawBufferCommand_t *)data + 1;
-			break;
-		case RC_SWAP_BUFFERS:
-			data = (swapBuffersCommand_t *)data + 1;
-			break;
-		case RC_VIDEOFRAME:
-			data = RB_TakeVideoFrameCmd( data );
-			break;
-		case RC_SCREENSHOT:
-			data = RB_TakeScreenshotCmd( data );
+		case RC_CAPTURE_STEREO:
+			data = R_MME_CaptureShotCmdStereo(data);
 			break;
 		case RC_END_OF_LIST:
-			secondPassDone = qtrue;
-			break;
 		default:
-			ri.Error(ERR_DROP, "Unknown render command");
+			// stop rendering on this thread
+			t2 = ri.Milliseconds();
+			backEnd.pc.msec = t2 - t1;
+			return;
 		}
 	}
-
-	// stop rendering
-	t2 = ri.Milliseconds()*Cvar_VariableValue("timescale");
-	backEnd.pc.msec = t2 - t1;
 }
 
 // What Pixel Shader type is currently active (regcoms or fragment programs).
