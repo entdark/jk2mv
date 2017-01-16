@@ -1,3 +1,5 @@
+#pragma once
+
 // snd_local.h -- private sound definations
 
 #ifndef SND_LOCAL_H
@@ -6,95 +8,23 @@
 #include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "snd_public.h"
-#include "mp3struct.h"
 
-#define USE_OPENAL
+#define		SFX_SOUNDS		10000
 
-
-// Open AL Specific
-#ifdef USE_OPENAL
-#ifdef MACOS_X
-#	include <OpenAL/al.h>
-#	include <OpenAL/alc.h>
-#else
-#	include <AL/al.h>
-#	include <AL/alc.h>
-#endif
-
-#	include <eax.h>
-#	include <EaxMan.h>
-#endif
-
-#define	PAINTBUFFER_SIZE		4096					// this is in samples
-
-#define SND_CHUNK_SIZE			1024					// samples
-#define SND_CHUNK_SIZE_FLOAT	(SND_CHUNK_SIZE/2)		// floats
-#define SND_CHUNK_SIZE_BYTE		(SND_CHUNK_SIZE*2)		// bytes
-#define	SND_CACHE_SIZE			6144					// this is in chunks
-
-
-#define DEFAULT_SOUND_NAME		"*defaultsound"
+typedef struct sfxEntry_s {
+	struct		sfxEntry_s *next;
+	char		name[MAX_QPATH];
+} sfxEntry_t;
 
 typedef struct {
-	int			left;	// the final values will be clamped to +/- 0x00ffff00 and shifted down
-	int			right;
-} portable_samplepair_t;
-
-
-typedef	struct sndBuffer_s {
-	short					sndChunk[SND_CHUNK_SIZE];
-	struct sndBuffer_s		*next;
-//	int						size;
-} sndBuffer;
-
-// keep this table in-sync with the table "sSoundCompressionMethodStrings" (snd_dma.cpp)	-ste
-//
-typedef enum
-{
-	ct_16 = 0,		// 16-bit uncompressed samples (the default)
-	ct_MP3,
-	//
-	ct_NUMBEROF		// used only for array sizing
-
-} SoundCompressionMethod_t;
-
-
-typedef struct sfx_s {
-	short			*pSoundData;
-	qboolean		bDefaultSound;			// couldn't be loaded, so use buzz
-	qboolean		bInMemory;				// not in Memory, set qtrue when loaded, and qfalse when its buffers are freed up because of being old, so can be reloaded
-	SoundCompressionMethod_t eSoundCompressionMethod;
-	MP3STREAM		*pMP3StreamHeader;		// NULL ptr unless this sfx_t is an MP3. Use Z_Malloc and Z_Free
-	int 			iSoundLengthInSamples;	// length in samples, always kept as 16bit now so this is #shorts (watch for stereo later for music?)
-	char 			sSoundName[MAX_QPATH];
-	int				iLastTimeUsed;
-	float			fVolRange;				// used to set the highest volume this sample has at load time - used for lipsynching
-	int				iLastLevelUsedOn;		// used for cacheing purposes
-	struct sfx_s	*next;					// only used because of hash table when registering
-
-	// Open AL
-#ifdef USE_OPENAL
-	ALuint		Buffer;
-#endif
-} sfx_t;
-
-
-// Open AL specific
-#ifdef USE_OPENAL
-typedef struct
-{
-	ALuint	BufferID;
-	ALuint	Status;
-	char	*Data;
-} STREAMINGBUFFER;
-#endif
-
-#define NUM_STREAMING_BUFFERS	4
-#define STREAMING_BUFFER_SIZE	4608		// 4 decoded MP3 frames
-
-#define QUEUED		1
-#define UNQUEUED	2
-
+	float		seekTime;
+	float		length;
+	char		startName[MAX_QPATH];
+	char		loopName[MAX_QPATH];
+	qboolean	playing;
+	qboolean	reload;
+	qboolean	override;
+} backgroundSound_t;
 
 typedef struct {
 	int			channels;
@@ -105,77 +35,50 @@ typedef struct {
 	byte		*buffer;
 } dma_t;
 
-#define START_SAMPLE_IMMEDIATE	0x7fffffff
-
-typedef struct loopSound_s {
+typedef struct {
 	vec3_t		origin;
 	vec3_t		velocity;
-	sfx_t		*sfx;
-	int			mergeFrame;
-	qboolean	active;
-	qboolean	kill;
-	qboolean	doppler;
-	float		dopplerScale;
-	float		oldDopplerScale;
-	int			framenum;
-
-	// Open AL
-	bool		bProcessed;
-	bool		bPlaying;
-	bool		bRelative;
-} loopSound_t;
-
-typedef struct
-{
-	int			allocTime;
-	int			startSample;	// START_SAMPLE_IMMEDIATE = set immediately on next mix
-	int			entnum;			// to allow overriding a specific sound
-	int			entchannel;		// to allow overriding a specific sound
-	int			leftvol;		// 0-255 volume after spatialization
-	int			rightvol;		// 0-255 volume after spatialization
-	int			master_vol;		// 0-255 volume before spatialization
-	float		dopplerScale;
-	float		oldDopplerScale;
-	vec3_t		origin;			// only use if fixed_origin is set
-	qboolean	fixed_origin;	// use origin instead of fetching entnum's origin
-	sfx_t		*thesfx;		// sfx structure
-	qboolean	doppler;
-	//
-	// new stuff for MP3 decoding...
-	//
-	MP3STREAM	MP3StreamHeader;
-	byte		MP3SlidingDecodeBuffer[50000/*12000*/];	// typical back-request = -3072, so roughly double is 6000 (safety), then doubled again so the 6K pos is in the middle of the buffer)
-	int			iMP3SlidingDecodeWritePos;
-	int			iMP3SlidingDecodeWindowPos;
-
-	// Open AL specific
-	bool	bLooping;	// Signifies if this channel / source is playing a looping sound
-	bool	bProcessed;	// Signifies if this channel / source has been processed
-	bool	bStreaming;	// Set to true if the data needs to be streamed (MP3 or dialogue)
-	#ifdef USE_OPENAL
-	STREAMINGBUFFER	buffers[NUM_STREAMING_BUFFERS];	// AL Buffers for streaming
-	ALuint		alSource;		// Open AL Source
-	#endif
-	bool		bPlaying;		// Set to true when a sound is playing on this channel / source
-	int			iStartTime;		// Time playback of Source begins
-} channel_t;
-
-
-#define	WAV_FORMAT_PCM		1
-#define WAV_FORMAT_ADPCM	2	// not actually implemented, but is the value that you get in a WAV header
-#define WAV_FORMAT_MP3		3	// not actually used this way, but just ensures we don't match one of the legit formats
-
-
+	sfxHandle_t	handle;
+	int			lastFrame;
+	int			volume;
+} entitySound_t;
 
 typedef struct {
-	int			format;
-	int			rate;
-	int			width;
-	int			channels;
-	int			samples;
-	int			dataofs;		// chunk starts this many bytes from file start
-} wavinfo_t;
+	const void	*parent;
+	vec3_t		origin;
+	vec3_t		velocity;
+	sfxHandle_t	handle;
+	int			volume;
+} loopQueue_t;
 
+typedef struct {
+	sfxHandle_t	handle;
+	vec3_t		origin;
+	short		entNum;
+	char		entChan;
+	char		hasOrigin;
+} channelQueue_t;
+
+struct openSound_s;
+typedef int (*openSoundRead_t)( struct openSound_s *open, qboolean stereo, int size, short *data );
+/* Maybe some kind of error return sometime? */
+typedef int (*openSoundSeek_t)( struct openSound_s *open, int samples );
+typedef void (*openSoundClose_t)( struct openSound_s *open );
+
+typedef struct openSound_s {
+	int					rate;
+	int					totalSamples, doneSamples;
+	char				buf[16*1024];
+	int					bufUsed, bufPos;
+	fileHandle_t		fileHandle;
+	int					fileSize, filePos;
+
+	openSoundRead_t		read;
+	openSoundSeek_t		seek;
+	openSoundClose_t	close;
+
+	char				data[0];
+} openSound_t;
 
 /*
 ====================================================================
@@ -185,6 +88,7 @@ typedef struct {
 ====================================================================
 */
 
+extern	dma_t	dma;
 // initializes cycling through a DMA buffer and returns information on it
 qboolean SNDDMA_Init(void);
 
@@ -201,59 +105,41 @@ void	SNDDMA_Submit(void);
 //====================================================================
 
 #define	MAX_CHANNELS			96
+#define	MAX_SNDQUEUE			512
+#define	MAX_LOOPQUEUE			512
 
-extern	channel_t   s_channels[MAX_CHANNELS];
-extern	channel_t   loop_channels[MAX_CHANNELS];
-extern	int		numLoopChannels;
-
-extern	int		s_paintedtime;
-extern	int		s_rawend;
-extern	vec3_t	listener_forward;
-extern	vec3_t	listener_right;
-extern	vec3_t	listener_up;
-extern	dma_t	dma;
-
-#define	MAX_RAW_SAMPLES	16384
-extern	portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
+extern	sfxEntry_t		sfxEntries[SFX_SOUNDS];
+extern	backgroundSound_t s_background;
+extern	channelQueue_t	s_channelQueue[MAX_SNDQUEUE];
+extern	int				s_channelQueueCount;
+extern	entitySound_t	s_entitySounds[MAX_GENTITIES];
+extern	loopQueue_t		s_loopQueue[MAX_LOOPQUEUE];
+extern	int				s_loopQueueCount;
 
 extern cvar_t	*s_volume;
-extern cvar_t	*s_nosound;
+extern cvar_t	*s_volumeVoice;
+extern cvar_t	*s_musicVolume;
 extern cvar_t	*s_khz;
-extern cvar_t	*s_show;
-extern cvar_t	*s_mixahead;
 
-extern cvar_t	*s_testsound;
-extern cvar_t	*s_separation;
+extern cvar_t	*s_doppler;
+extern cvar_t	*s_dopplerSpeed;
+extern cvar_t	*s_dopplerFactor;
 
-qboolean S_LoadSound( sfx_t *sfx );
+extern cvar_t	*s_attenuate;
 
-void S_PaintChannels(int endtime);
+extern int		s_listenNumber;
+extern vec3_t	s_listenOrigin;
+extern vec3_t	s_listenVelocity;
+extern vec3_t	s_listenAxis[3];
 
-portable_samplepair_t *S_GetRawSamplePointer();
+extern qboolean	s_underWater;
 
-// spatializes a channel
-void S_Spatialize(channel_t *ch);
+qboolean S_FileExists(char *fileName);
 
-void S_FreeAllSFXMem(void);
-
-
-#define	NXStream byte
-
-
-//////////////// sound code changes...
-//
-byte	*SND_malloc(int iSize, sfx_t *sfx);
-void	 SND_setup();
-int		 SND_FreeOldestSound();
-void	 SND_TouchSFX(sfx_t *sfx);
-void	S_DisplayFreeMemory(void);
-void	S_memoryLoad(sfx_t *sfx);
-//
-////////////////
-
-
-extern short *sfxScratchBuffer;
-extern sfx_t *sfxScratchPointer;
-extern int	   sfxScratchIndex;
+openSound_t *S_SoundOpen( const char *fileName );
+int S_SoundRead( openSound_t *open, qboolean stereo, int size, short *data );
+int S_SoundSeek( openSound_t *open, int samples );
+void S_SoundClose( openSound_t *open );
 
 #endif	// #ifndef SND_LOCAL_H
+

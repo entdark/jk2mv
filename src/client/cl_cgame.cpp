@@ -736,7 +736,7 @@ intptr_t CL_CgameSystemCalls(intptr_t *args) {
 	case CG_CM_MARKFRAGMENTS:
 		return re.MarkFragments( args[1], (const vec3_t *)VMA(2), (const float *)VMA(3), args[4], (float *)VMA(5), args[6], (markFragment_t *)VMA(7) );
 	case CG_S_MUTESOUND:
-		S_MuteSound( args[1], args[2] );
+		S_StopSound(args[1], args[2], -1 );
 		return 0;
 	case CG_S_STARTSOUND:
 		S_StartSound( (float *)VMA(1), args[2], args[3], args[4] );
@@ -748,13 +748,13 @@ intptr_t CL_CgameSystemCalls(intptr_t *args) {
 		S_ClearLoopingSounds((qboolean)args[1]);
 		return 0;
 	case CG_S_ADDLOOPINGSOUND:
-		S_AddLoopingSound( args[1], (const float *)VMA(2), (const float *)VMA(3), args[4] );
+		S_AddLoopingSound( ((char *)cl.entityBaselines) + args[1], args[1], (const float *)VMA(2), (const float *)VMA(3), args[4], 127 );
 		return 0;
 	case CG_S_ADDREALLOOPINGSOUND:
-		S_AddRealLoopingSound( args[1], (const float *)VMA(2), (const float *)VMA(3), args[4] );
+		S_AddLoopingSound( ((char *)cl.entityBaselines) + args[1], args[1], (const float *)VMA(2), (const float *)VMA(3), args[4], 90 );
 		return 0;
 	case CG_S_STOPLOOPINGSOUND:
-		S_StopLoopingSound( args[1] );
+		S_StopLoopingSound( ((char *)cl.entityBaselines) + args[1] );
 		return 0;
 	case CG_S_UPDATEENTITYPOSITION:
 		S_UpdateEntityPosition( args[1], (const float *)VMA(2) );

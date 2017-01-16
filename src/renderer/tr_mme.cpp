@@ -253,7 +253,7 @@ static void R_MME_MultiShot( byte * target ) {
 
 qboolean R_MME_TakeShot( void ) {
 	int pixelCount;
-	byte *inSound = NULL;//[MME_SAMPLERATE] = {0};
+	byte inSound[MME_SAMPLERATE] = {0};
 	int sizeSound = 0;
 	qboolean audio = qfalse, audioTaken = qfalse;
 	qboolean doGamma;
@@ -383,7 +383,7 @@ qboolean R_MME_TakeShot( void ) {
 //			if ( mme_saveStencil->integer == 1 )
 //				R_MME_BlurAccumShift( blurStencil );
 		
-//			audio = ri.S_MMEAviImport(inSound, &sizeSound);
+			audio = ri.S_MMEAviImport(inSound, &sizeSound);
 			audioTaken = qtrue;
 			// Big test for an rgba shot
 			if ( mme_saveShot->integer == 1 && shotData.main.type == mmeShotTypeRGBA ) {
@@ -441,8 +441,8 @@ qboolean R_MME_TakeShot( void ) {
 				shotBuf[i * 4 + 3] = alphaBuf[i];
 			}
 		}
-//		if (!audioTaken)
-//			audio = ri.S_MMEAviImport(inSound, &sizeSound);
+		if (!audioTaken)
+			audio = ri.S_MMEAviImport(inSound, &sizeSound);
 		audioTaken = qtrue;
 		R_MME_SaveShot( &shotData.main, glConfig.vidWidth, glConfig.vidHeight, shotData.fps, shotBuf, audio, sizeSound, inSound );
 		ri.Hunk_FreeTempMemory( shotBuf );
@@ -458,9 +458,9 @@ qboolean R_MME_TakeShot( void ) {
 */		if ( mme_saveDepth->integer > 1 || ( !blurControl->totalFrames && mme_saveDepth->integer) ) {
 			byte *depthShot = (byte *)ri.Hunk_AllocateTempMemory( pixelCount * 1);
 			R_MME_GetDepth( depthShot );
-//			if (!audioTaken && ((mme_saveDepth->integer > 1 && mme_saveShot->integer > 1)
-//				|| (mme_saveDepth->integer == 1 && mme_saveShot->integer == 1)))
-//				audio = ri.S_MMEAviImport(inSound, &sizeSound);
+			if (!audioTaken && ((mme_saveDepth->integer > 1 && mme_saveShot->integer > 1)
+				|| (mme_saveDepth->integer == 1 && mme_saveShot->integer == 1)))
+				audio = ri.S_MMEAviImport(inSound, &sizeSound);
 			R_MME_SaveShot( &shotData.depth, glConfig.vidWidth, glConfig.vidHeight, shotData.fps, depthShot, audio, sizeSound, inSound );
 			ri.Hunk_FreeTempMemory( depthShot );
 		}

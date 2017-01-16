@@ -2,8 +2,6 @@
 
 #include "tr_mme.h"
 
-#define MME_SAMPLERATE	44100
-
 static void aviWrite16( void *pos, unsigned short val) {
 	unsigned char *data = (unsigned char *)pos;
 	data[0] = (val >> 0) & 0xff;
@@ -481,7 +479,7 @@ void mmeAviSound( mmeAviFile_t *aviFile, const char *name, mmeShotType_t type, i
 	Com_Memcpy(&inBuf[bytesInBuf], soundBuf, size);
 	bytesInBuf += size;
 
-	if(bytesInBuf >= (int)(double)((double)MME_SAMPLERATE / (double)fps * ((16.0/8.0)*2.0))) {
+	if(bytesInBuf >= (int)(double)((double)MME_SAMPLERATE / (double)fps * 4.0/*((16.0/8.0)*2.0)*/)) {
 		byte *outBuf;
 		int i;
 		size = bytesInBuf;

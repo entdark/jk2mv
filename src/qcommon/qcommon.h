@@ -602,6 +602,7 @@ int		FS_GetFileList(  const char *path, const char *extension, char *listbuf, in
 int		FS_GetModList(  char *listbuf, int bufsize );
 
 fileHandle_t	FS_FOpenFileWrite( const char *qpath );
+fileHandle_t	FS_FOpenFileReadWrite( const char *filename );
 fileHandle_t FS_FOpenBaseFileWrite(const char *filename);
 fileHandle_t	FS_FDirectOpenFileWrite( const char *filename, const char *mode );
 // will properly create any needed paths and deal with seperater character issues

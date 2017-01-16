@@ -2343,4 +2343,6 @@ typedef union byteAlias_u {
 #define Q_min(x,y) ((x)<(y)?(x):(y))
 #define Q_max(x,y) ((x)>(y)?(x):(y))
 
+#define MME_SAMPLERATE	44100 //jo is full of 44khz mp3
+
 #endif	// __Q_SHARED_H

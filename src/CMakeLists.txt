@@ -291,24 +291,6 @@ if (BuildMVMP)
 	set(MVMPIncludeDirs ${MVMPIncludeDirs} ${OPENGL_INCLUDE_DIR})
 	set(MVMPLibraries ${MVMPLibraries} ${OPENGL_gl_LIBRARY})
 
-	if(UseInternalOpenAL)
-		# OpenAL
-		find_library(OpenALLib NAMES "softoal_${Architecture}" PATHS "${LIBDir}/OpenAL")
-		if(NOT OpenALLib)
-			message(FATAL_ERROR "softoal library not found!")
-		endif()
-		set(MVMPLibraries ${MVMPLibraries} ${OpenALLib})
-		set(MVMPIncludeDirs ${MVMPIncludeDirs} "${LIBDir}/OpenAL/include")
-	else()
-		# OpenAL
-		find_package(OpenAL)
-		if(NOT OPENAL_FOUND)
-			message(FATAL_ERROR "OpenAL dev files not found!")
-		endif()
-		set(MVMPIncludeDirs ${MVMPIncludeDirs} ${OPENAL_INCLUDE_DIR})
-		set(MVMPLibraries ${MVMPLibraries} ${OPENAL_LIBRARY})
-	endif()
-	
 	if(UseInternalSDL2)
 		# SDL2
 		find_library(SDL2Lib NAMES "SDL2_${Architecture}" PATHS "${LIBDir}/SDL2")
@@ -328,9 +310,6 @@ if (BuildMVMP)
 		set(MVMPLibraries ${MVMPLibraries} ${SDL2_LIBRARY})
 	endif()
 
-	# EAX
-	set(MVMPIncludeDirs ${MVMPIncludeDirs} "${LIBDir}/eax")
-
 	# JPEG
 	if(NOT UseInternalJPEG)
 		find_package(JPEG)
@@ -349,6 +328,15 @@ if (BuildMVMP)
 	endif()
 	set(MVMPIncludeDirs ${MVMPIncludeDirs} ${PNG_INCLUDE_DIRS})
 
+	# MAD
+	if(NOT UseInternalMAD)
+		find_package(MAD)
+		if(NOT MAD_FOUND)
+			message(FATAL_ERROR "libmad dev files not found! Install it or set UseInternalMAD ON")
+		endif()
+	endif()
+	set(MVMPIncludeDirs ${MVMPIncludeDirs} ${MAD_INCLUDE_DIRS})
+
 	# Source
 	set(MVMPClientFiles
 		"client/FXExport.h"
@@ -358,9 +346,6 @@ if (BuildMVMP)
 		"client/FxUtil.h"
 		"client/client.h"
 		"client/keys.h"
-		"client/snd_local.h"
-		"client/snd_mp3.h"
-		"client/snd_public.h"
 
 		"client/FXExport.cpp"
 		"client/FxPrimitives.cpp"
@@ -368,6 +353,7 @@ if (BuildMVMP)
 		"client/FxSystem.cpp"
 		"client/FxTemplate.cpp"
 		"client/FxUtil.cpp"
+
 		"client/cl_cgame.cpp"
 		"client/cl_cin.cpp"
 		"client/cl_console.cpp"
@@ -379,53 +365,21 @@ if (BuildMVMP)
 		"client/cl_parse.cpp"
 		"client/cl_scrn.cpp"
 		"client/cl_ui.cpp"
+
+		"client/snd_local.h"
+		"client/snd_public.h"
+		"client/snd_mix.h"
+		"client/snd_main.cpp"
 		"client/snd_dma.cpp"
-		"client/snd_mem.cpp"
 		"client/snd_mix.cpp"
-		"client/snd_mp3.cpp"
+		"client/snd_mem.cpp"
+		"client/snd_effects.cpp"
+		"client/snd_mme.cpp"
 
 		"client/cl_mme.cpp"
 	)
 	source_group("client" FILES ${MVMPClientFiles})
 	set(MVMPFiles ${MVMPFiles} ${MVMPClientFiles})
-
-	set(MVMPMP3Files
-		"${LIBDir}/mp3/config.h"
-		"${LIBDir}/mp3/copyright.h"
-		"${LIBDir}/mp3/htable.h"
-		"${LIBDir}/mp3/jdw.h"
-		"${LIBDir}/mp3/l3.h"
-		"${LIBDir}/mp3/mhead.h"
-		"${LIBDir}/mp3/mp3struct.h"
-		"${LIBDir}/mp3/port.h"
-		"${LIBDir}/mp3/small_header.h"
-		"${LIBDir}/mp3/tableawd.h"
-
-		"${LIBDir}/mp3/cdct.c"
-		"${LIBDir}/mp3/csbt.c"
-		"${LIBDir}/mp3/csbtb.c"
-		"${LIBDir}/mp3/csbtl3.c"
-		"${LIBDir}/mp3/cup.c"
-		"${LIBDir}/mp3/cupini.c"
-		"${LIBDir}/mp3/cupl1.c"
-		"${LIBDir}/mp3/cupl3.c"
-		"${LIBDir}/mp3/cwin.c"
-		"${LIBDir}/mp3/cwinb.c"
-		"${LIBDir}/mp3/cwinm.c"
-		"${LIBDir}/mp3/hwin.c"
-		"${LIBDir}/mp3/l3dq.c"
-		"${LIBDir}/mp3/l3init.c"
-		"${LIBDir}/mp3/mdct.c"
-		"${LIBDir}/mp3/mhead.c"
-		"${LIBDir}/mp3/msis.c"
-		"${LIBDir}/mp3/towave.c"
-		"${LIBDir}/mp3/uph.c"
-		"${LIBDir}/mp3/upsf.c"
-		"${LIBDir}/mp3/wavep.c"
-	)
-	source_group("mp3" FILES ${MVMPMP3Files})
-	set(MVMPIncludeDirs ${MVMPIncludeDirs} "${LIBDir}/mp3")
-	set(MVMPFiles ${MVMPFiles} ${MVMPMP3Files})
 
 	set(MVMPRendererFiles
 		"renderer/glext.h"
@@ -479,7 +433,6 @@ if (BuildMVMP)
 	set(MVMPFiles ${MVMPFiles} ${MVMPSDLFiles})
 
 	if ((${CMAKE_C_COMPILER_ID} STREQUAL GNU) OR (${CMAKE_C_COMPILER_ID} STREQUAL Clang))
-		set(LibFiles ${MVMPMP3Files})
 		set_source_files_properties(${LibFiles} PROPERTIES COMPILE_FLAGS "-w")
 	endif()
 
@@ -500,13 +453,6 @@ if (BuildMVMP)
 	endif()
 
 	if(MSVC)
-		# copy over openal & sdl dll
-		add_custom_command(TARGET ${MVMP} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different
-			"${LIBDir}/OpenAL/softoal_${Architecture}.dll"
-			$<TARGET_FILE_DIR:${MVMP}>
-		)
-		
 		add_custom_command(TARGET ${MVMP} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different
 			"${LIBDir}/SDL2/SDL2_${Architecture}.dll"
@@ -532,13 +478,12 @@ if (BuildMVMP)
 	set_target_properties(${MVMP} PROPERTIES COMPILE_DEFINITIONS_RELEASE "${ReleaseDefines};${GlobalDefines}")
 	set_target_properties(${MVMP} PROPERTIES COMPILE_DEFINITIONS_DEBUG "${DebugDefines};${GlobalDefines}")
 	set_target_properties(${MVMP} PROPERTIES INCLUDE_DIRECTORIES "${MVMPIncludeDirs}")
-	target_link_libraries(${MVMP} ${MVMPLibraries} ${JPEG_LIBRARIES} ${PNG_LIBRARIES} ${MINIZIP_LIBRARIES} ${ZLIB_LIBRARIES})
+	target_link_libraries(${MVMP} ${MVMPLibraries} ${JPEG_LIBRARIES} ${PNG_LIBRARIES} ${MINIZIP_LIBRARIES} ${ZLIB_LIBRARIES} ${MAD_LIBRARIES})
 	set_target_properties(${MVMP} PROPERTIES PROJECT_LABEL "jk2mvmp")
 
 	# installation
 	if(MSVC)
 		install(TARGETS ${MVMP} RUNTIME DESTINATION ".")
-		install(FILES "${LIBDir}/OpenAL/softoal_${Architecture}.dll" DESTINATION ".")
 		install(FILES "${LIBDir}/SDL2/SDL2_${Architecture}.dll" DESTINATION ".")
 		if(NOT BuildPortableVersion)
 			install(FILES "${RESDir}/mv.ico" DESTINATION ".")

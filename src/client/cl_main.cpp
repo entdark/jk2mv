@@ -1335,21 +1335,13 @@ The cgame and game must also be forced to restart because
 handles will be invalid
 =================
 */
-extern void S_UnCacheDynamicMusic( void );
 void CL_Snd_Restart_f( void ) {
 	S_Shutdown();
 	S_Init();
-
-	S_FreeAllSFXMem();
-	S_UnCacheDynamicMusic();
-
-//	CL_Vid_Restart_f();
+	S_BeginRegistration();
 
 	extern qboolean	s_soundMuted;
 	s_soundMuted = qfalse;		// we can play again
-
-	extern void S_RestartMusic( void );
-	S_RestartMusic();
 }
 
 
@@ -2472,7 +2464,7 @@ void CL_Frame ( int msec ) {
 			msec = (int)frameTime;
 			clc.aviDemoRemain = frameTime - msec;
 			/* Signal this frame to be recorded */
-//			S_MMERecord(shotName, 1.0f / fps);
+			S_MMERecord(shotName, 1.0f / fps);
 		}
 	}
 
@@ -2735,6 +2727,9 @@ void CL_InitRef( void ) {
 	ri.CIN_RunCinematic = CIN_RunCinematic;
 
 	ri.CM_PointContents = CM_PointContents;
+
+	//mme
+	ri.S_MMEAviImport = S_MMEAviImport;
 
 	ret = GetRefAPI( REF_API_VERSION, &ri );
 

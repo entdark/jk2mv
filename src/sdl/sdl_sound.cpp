@@ -41,6 +41,7 @@ cvar_t *s_sdlMixSamps;
 /* The audio callback. All the magic happens here. */
 static int dmapos = 0;
 static int dmasize = 0;
+static byte *helperBuf;
 
 /*
 ===============
@@ -232,7 +233,7 @@ qboolean SNDDMA_Init(void)
 	dma.submission_chunk = 1;
 	dma.speed = obtained.freq;
 	dmasize = (dma.samples * (dma.samplebits/8));
-	dma.buffer = (byte *)calloc(1, dmasize);
+	dma.buffer = helperBuf = (byte *)Z_Malloc(dmasize, TAG_SND_RAWDATA, qtrue);
 
 	Com_Printf("Starting SDL audio callback...\n");
 	SDL_PauseAudio(0);  // start callback.
@@ -263,8 +264,8 @@ void SNDDMA_Shutdown(void)
 	SDL_PauseAudio(1);
 	SDL_CloseAudio();
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
-	free(dma.buffer);
-	dma.buffer = NULL;
+	Z_Free(helperBuf);
+	helperBuf = NULL;
 	dmapos = dmasize = 0;
 	snd_inited = qfalse;
 	Com_Printf("SDL audio device shut down.\n");
