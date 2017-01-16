@@ -267,9 +267,12 @@ void blurCreate( mmeBlurControl_t* control, const char* type, int frames ) {
 	control->overlapFrames = 0;
 	control->overlapIndex = 0;
 
+#ifndef ARCH_X86_64
 	_mm_empty();
+#endif
 }
 
+#ifndef ARCH_X86_64
 static void MME_AccumClearMMX( void* w, const void* r, short mul, int count ) {
 	const __m64 * reader = (const __m64 *) r;
 	__m64 *writer = (__m64 *) w;
@@ -328,16 +331,20 @@ static void MME_AccumShiftMMX( const void  *r, void *w, int count ) {
 	}
 	_mm_empty();
 }
+#endif
 
 void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const __m64 *add ) {
 	mmeBlurControl_t* control = block->control;
 	int index = control->totalIndex;
+#ifndef ARCH_X86_64
 	if ( mme_cpuSSE2->integer ) {
+#endif
 		if ( index == 0) {
 			MME_AccumClearSSE( block->accum, add, control->SSE[ index ], block->count );
 		} else {
 			MME_AccumAddSSE( block->accum, add, control->SSE[ index ], block->count );
 		}
+#ifndef ARCH_X86_64
 	} else {
 		if ( index == 0) {
 			MME_AccumClearMMX( block->accum, add, control->MMX[ index ], block->count );
@@ -345,6 +352,7 @@ void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const __m64 *add ) {
 			MME_AccumAddMMX( block->accum, add, control->MMX[ index ], block->count );
 		}
 	}
+#endif
 }
 
 void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index ) {
@@ -354,11 +362,12 @@ void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index ) {
 }
 
 void R_MME_BlurAccumShift( mmeBlurBlock_t *block  ) {
-	if ( mme_cpuSSE2->integer ) {
-		MME_AccumShiftSSE( block->accum, block->accum, block->count );
-	} else {
+#ifndef ARCH_X86_64
+	if ( !mme_cpuSSE2->integer )
 		MME_AccumShiftMMX( block->accum, block->accum, block->count );
-	}
+	else
+#endif
+		MME_AccumShiftSSE( block->accum, block->accum, block->count );
 }
 
 //Replace rad with _rad gogo includes
