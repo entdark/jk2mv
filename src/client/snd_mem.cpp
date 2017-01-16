@@ -364,6 +364,15 @@ static openSound_t * S_WavOpen( const char *fileName ) {
 #ifdef HAVE_LIBMAD 
 
 #ifdef _WIN32
+#if defined (ARCH_X86_64)
+#define FPM_64BIT
+#elif defined (ARCH_X86)
+#define FPM_INTEL
+#elif defined (ARCH_ARM32)
+#define FPM_ARM
+#else
+#define FPM_DEFAULT
+#endif
 #include "mad.h"
 #pragma comment (lib, "libmad.lib")
 #else

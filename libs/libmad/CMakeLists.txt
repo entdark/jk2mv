@@ -5,15 +5,31 @@
 
 # This only has effect in this directory (lib/libmad).
 include_directories(include/)
-include_directories(${ZLIB_INCLUDE_DIRS})
 
-add_definitions(-DNDEBUG -DFPM_INTEL -DWIN32 -D_LIB -DHAVE_CONFIG_H -DASO_ZEROCHECK)
+add_definitions(-DHAVE_CONFIG_H -DFPM_DEFAULT)
+
+# we want more accurate FPM logic
+if(${Architecture} STREQUAL "x64")
+  add_definitions(-DFPM_64BIT)
+elseif(${Architecture} STREQUAL "x86")
+  add_definitions(-DFPM_INTEL)
+elseif(${Architecture} STREQUAL "i386")
+  add_definitions(-DFPM_INTEL)
+elseif(${Architecture} STREQUAL "x86_64")
+  add_definitions(-DFPM_64BIT)
+elseif(${Architecture} STREQUAL "arm")
+  add_definitions(-DFPM_ARM)
+elseif(${Architecture} STREQUAL "amd64")
+  add_definitions(-DFPM_64BIT)
+else()
+  add_definitions(-DFPM_DEFAULT)
+endif()
+
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(MSVC)
 
-add_library(libmad STATIC include/mad.h
-                                  mad.h
+add_library(libmad STATIC         mad.h
                                   global.h
                                   bit.h
                                   bit.c

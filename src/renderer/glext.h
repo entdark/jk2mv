@@ -3242,7 +3242,7 @@ typedef GLboolean (APIENTRYP PFNGLISPROGRAMARBPROC) (GLuint program);
 //teh's PBO
 typedef void (APIENTRY * PFNGLGENBUFFERSARBPROC) (GLsizei n, GLuint* ids);
 typedef void (APIENTRY * PFNGLBINDBUFFERARBPROC) (GLenum target, GLuint id);
-typedef void (APIENTRY * PFNGLBUFFERDATAARBPROC) (GLenum target, GLsizei size, const void* data, GLenum usage);
+//typedef void (APIENTRY * PFNGLBUFFERDATAARBPROC) (GLenum target, GLsizei size, const void* data, GLenum usage);
 typedef void *(APIENTRY * PFNGLMAPBUFFERARBPROC) (GLenum target, GLenum access);
 typedef GLboolean(APIENTRY * PFNGLUNMAPBUFFERARBPROC) (GLenum target);
 #define GL_READ_ONLY_ARB                  0x88B8
