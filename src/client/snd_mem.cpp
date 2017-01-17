@@ -32,6 +32,7 @@ const char *ext[] = {
 extern	cvar_t* s_language;
 qboolean S_FileExists(char *fileName) {
 	char *voice = strstr(fileName,"chars");
+	char sfileName[MAX_QPATH];
 	fileHandle_t f;
 	int i;
 	if (voice && s_language) {
@@ -47,8 +48,9 @@ qboolean S_FileExists(char *fileName) {
 	}
 tryDefaultLanguage:
 	i = 0;
+	Q_strncpyz( sfileName, fileName, sizeof( sfileName ) );
 	while (ext[i]) {
-		COM_StripExtension(fileName, fileName, MAX_QPATH);
+		COM_StripExtension(sfileName, fileName, sizeof(sfileName));
 		COM_DefaultExtension(fileName, MAX_QPATH, ext[i]);
 		FS_FOpenFileRead(fileName, &f, qtrue);
 		if (f)
