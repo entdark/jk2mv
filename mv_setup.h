@@ -1,2 +1,0 @@
-#define JK2MV_VERSION "1.2.1-84-gca524c2"
-#define Q3_VERSION "JK2MV: v" JK2MV_VERSION
