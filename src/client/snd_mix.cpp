@@ -146,6 +146,7 @@ void S_MixClipOutput(int count, const int *input, short *output, int outStart, i
 	int		i;
 	int		val;
 
+	outStart &= outMask;
 	for (i=0 ; i<count ; i++) {
 		val = input[i*2+0] >> MIX_SHIFT;
 		if (val > 0x7fff)
