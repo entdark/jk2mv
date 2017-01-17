@@ -662,7 +662,7 @@ qboolean FS_FileErase( const char *file )
 
 	testpath = FS_BuildOSPath( fs_homepath->string, fs_gamedir, file );
 
-	return (qboolean)(_unlink( testpath ) == 0);
+	return (qboolean)(unlink( testpath ) == 0);
 }
 
 qboolean FS_Base_FileExists(const char *file)

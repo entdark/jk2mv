@@ -41,7 +41,6 @@ cvar_t *s_sdlMixSamps;
 /* The audio callback. All the magic happens here. */
 static int dmapos = 0;
 static int dmasize = 0;
-static byte *helperBuf;
 
 /*
 ===============
@@ -145,7 +144,7 @@ qboolean SNDDMA_Init(void)
 
 	if (!s_sdlBits) {
 		s_sdlBits = Cvar_Get("s_sdlBits", "16", CVAR_ARCHIVE | CVAR_GLOBAL);
-		s_sdlSpeed = Cvar_Get("s_sdlSpeed", "44100", CVAR_ARCHIVE | CVAR_GLOBAL);
+		s_sdlSpeed = Cvar_Get("s_sdlSpeed", "22050", CVAR_ARCHIVE | CVAR_GLOBAL);
 		s_sdlChannels = Cvar_Get("s_sdlChannels", "2", CVAR_ARCHIVE | CVAR_GLOBAL);
 		s_sdlDevSamps = Cvar_Get("s_sdlDevSamps", "0", CVAR_ARCHIVE | CVAR_GLOBAL);
 		s_sdlMixSamps = Cvar_Get("s_sdlMixSamps", "0", CVAR_ARCHIVE | CVAR_GLOBAL);
@@ -174,7 +173,7 @@ qboolean SNDDMA_Init(void)
 		tmp = 16;
 
 	desired.freq = (int) s_sdlSpeed->value;
-	if(!desired.freq) desired.freq = 44100;
+	if(!desired.freq) desired.freq = 22050;
 	desired.format = ((tmp == 16) ? AUDIO_S16SYS : AUDIO_U8);
 
 	// I dunno if this is the best idea, but I'll give it a try...
@@ -233,7 +232,7 @@ qboolean SNDDMA_Init(void)
 	dma.submission_chunk = 1;
 	dma.speed = obtained.freq;
 	dmasize = (dma.samples * (dma.samplebits/8));
-	dma.buffer = helperBuf = (byte *)Z_Malloc(dmasize, TAG_SND_RAWDATA, qtrue);
+	dma.buffer = (byte *)calloc(1, dmasize);
 
 	Com_Printf("Starting SDL audio callback...\n");
 	SDL_PauseAudio(0);  // start callback.
@@ -264,8 +263,8 @@ void SNDDMA_Shutdown(void)
 	SDL_PauseAudio(1);
 	SDL_CloseAudio();
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
-	Z_Free(helperBuf);
-	helperBuf = NULL;
+	free(dma.buffer);
+	dma.buffer = NULL;
 	dmapos = dmasize = 0;
 	snd_inited = qfalse;
 	Com_Printf("SDL audio device shut down.\n");

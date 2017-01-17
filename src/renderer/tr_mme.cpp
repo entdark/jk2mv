@@ -2,8 +2,8 @@
 
 #include "tr_mme.h"
 
-static char *workAlloc = 0;
-static char *workAlign = 0;
+static byte *workAlloc = 0;
+static byte *workAlign = 0;
 static int workSize, workUsed;
 static qboolean allocFailed = qfalse;
 
@@ -74,20 +74,20 @@ cvar_t  *mme_pipeCommand;
 
 static void R_MME_MakeBlurBlock( mmeBlurBlock_t *block, int size, mmeBlurControl_t* control ) {
 	memset( block, 0, sizeof( *block ) );
-	size = (size + 15) & ~15;
-	block->count = size / sizeof ( __m64 );
+	size = PAD( size, 16 );
+	block->count = size / 8;
 	block->control = control;
 
 	if ( control->totalFrames ) {
 		//Allow for floating point buffer with sse
-		block->accum = (__m64 *)(workAlign + workUsed);
+		block->accum = (workAlign + workUsed);
 		workUsed += size * 4;
 		if ( workUsed > workSize ) {
 			ri.Error( ERR_FATAL, "Failed to allocate %d bytes from the mme_workMegs buffer\n", workUsed );
 		}
 	} 
 	if ( control->overlapFrames ) {
-		block->overlap = (__m64 *)(workAlign + workUsed);
+		block->overlap = (workAlign + workUsed);
 		workUsed += control->overlapFrames * size;
 		if ( workUsed > workSize ) {
 			ri.Error( ERR_FATAL, "Failed to allocate %d bytes from the mme_workMegs buffer\n", workUsed );
@@ -212,7 +212,7 @@ void R_MME_JitterView( float *pixels, float *eyes ) {
 int R_MME_MultiPassNext( ) {
 	mmeBlurControl_t* control = &passData.control;
 	byte* outAlloc;
-	__m64 *outAlign;
+	byte *outAlign;
 	int index;
 	if ( !shotData.take || tr.finishStereo ) {
 		shotData.take = qfalse;
@@ -223,7 +223,7 @@ int R_MME_MultiPassNext( ) {
 
 	index = control->totalIndex;
 	outAlloc = (byte *)ri.Hunk_AllocateTempMemory( mainData.pixelCount * 3 + 16);
-	outAlign = (__m64 *)((((int)(outAlloc)) + 15) & ~15);
+	outAlign = (byte *)PADP( outAlloc, 16 );
 
     WIN_Present(&glWindow);//GLimp_EndFrame();
 	R_MME_GetShot( outAlign, shotData.main.type );
@@ -342,20 +342,20 @@ qboolean R_MME_TakeShot( void ) {
 			blurControl->totalIndex++;
 		} else {
 			byte *outAlloc;
-			__m64 *outAlign;
+			byte *outAlign;
 			outAlloc = (byte *)ri.Hunk_AllocateTempMemory( pixelCount * 3 + 16);
-			outAlign = (__m64 *)((((int)(outAlloc)) + 15) & ~15);
+			outAlign = (byte *)PADP( outAlloc, 16 );
 
 			if ( mme_saveShot->integer == 1 ) {
-				R_MME_MultiShot( (byte*)outAlign );
+				R_MME_MultiShot( outAlign );
 				if ( doGamma && mme_blurGamma->integer ) {
-					R_GammaCorrect( (byte *) outAlign, pixelCount * 3 );
+					R_GammaCorrect( outAlign, pixelCount * 3 );
 				}
 				R_MME_BlurAccumAdd( blurShot, outAlign );
 			}
 
 			if ( mme_saveDepth->integer == 1 ) {
-				R_MME_GetDepth( (byte *)outAlign );
+				R_MME_GetDepth( outAlign );
 				R_MME_BlurAccumAdd( blurDepth, outAlign );
 			}
 
@@ -635,13 +635,13 @@ void R_MME_Init(void) {
 		else if (workSize > 512)
 			workSize = 512;
 		workSize *= 1024 * 1024 / 2; //dividing by 2 because other half is used in stereo
-		workAlloc = (char *)calloc( workSize + 16, 1 );
+		workAlloc = (byte *)calloc( workSize + 16, 1 );
 		if (!workAlloc) {
 			ri.Printf(PRINT_ALL, "Failed to allocate %d bytes for mme work buffer\n", workSize );
 			allocFailed = qtrue;
 			return;
 		}
-		workAlign = (char *)(((int)workAlloc + 15) & ~15);
+		workAlign = (byte *)PADP( workAlloc, 16 );
 	}
 	R_MME_CheckCvars();
 }

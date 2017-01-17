@@ -50,8 +50,8 @@ typedef struct {
 } mmeBlurControl_t;
 
 typedef struct {
-	__m64	*accum;
-	__m64	*overlap;
+	void	*accum;
+	void	*overlap;
 	int		count;
 	mmeBlurControl_t *control;
 } mmeBlurBlock_t;
@@ -69,7 +69,7 @@ void MME_AccumClearSSE( void *w, const void *r, short int mul, int count );
 void MME_AccumAddSSE( void* w, const void* r, short int mul, int count );
 void MME_AccumShiftSSE( const void *r, void *w, int count );
 
-void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const __m64 *add );
+void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const void *add );
 void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index );
 void R_MME_BlurAccumShift( mmeBlurBlock_t *block  );
 void blurCreate( mmeBlurControl_t* control, const char* type, int frames );

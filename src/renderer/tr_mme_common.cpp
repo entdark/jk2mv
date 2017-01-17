@@ -161,7 +161,7 @@ void R_MME_SaveShot( mmeShot_t *shot, int width, int height, float fps, byte *in
 ID_INLINE byte * R_MME_BlurOverlapBuf(mmeBlurBlock_t *block) {
 	mmeBlurControl_t* control = block->control;
 	int index = control->overlapIndex % control->overlapFrames;
-	return (byte *)(block->overlap + block->count * index);
+	return (byte *)((int64_t *)block->overlap + block->count * index);
 }
 
 void blurCreate( mmeBlurControl_t* control, const char* type, int frames ) {
@@ -333,7 +333,7 @@ static void MME_AccumShiftMMX( const void  *r, void *w, int count ) {
 }
 #endif
 
-void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const __m64 *add ) {
+void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const void *add ) {
 	mmeBlurControl_t* control = block->control;
 	int index = control->totalIndex;
 #ifndef ARCH_X86_64
@@ -358,7 +358,7 @@ void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const __m64 *add ) {
 void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index ) {
 	mmeBlurControl_t* control = block->control;
 	index = ( index + control->overlapIndex ) % control->overlapFrames;
-	R_MME_BlurAccumAdd( block, block->overlap + block->count * index );
+	R_MME_BlurAccumAdd( block, (int64_t *)block->overlap + block->count * index );
 }
 
 void R_MME_BlurAccumShift( mmeBlurBlock_t *block  ) {

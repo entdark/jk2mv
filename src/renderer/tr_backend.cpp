@@ -1489,7 +1489,7 @@ again:
 			break;
 		case RC_SWAP_BUFFERS:
 			data = RB_SwapBuffers(data);
-			if ((int)data == 0)
+			if (data == NULL)
 				goto again;
 			break;
 		case RC_SCREENSHOT:
