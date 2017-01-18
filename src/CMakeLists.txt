@@ -410,7 +410,6 @@ if (BuildMVMP)
 		"renderer/tr_mme_stereo.cpp"
 		"renderer/tr_mme_common.cpp"
 		"renderer/tr_mme_avi.cpp"
-		"renderer/tr_mme_sse2.cpp"
 	)
 	source_group("renderer" FILES ${MVMPRendererFiles})
 	set(MVMPFiles ${MVMPFiles} ${MVMPRendererFiles})

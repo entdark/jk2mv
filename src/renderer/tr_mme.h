@@ -65,10 +65,6 @@ void mmeAviShot( mmeAviFile_t *aviFile, const char *name, mmeShotType_t type, in
 void mmeAviSound( mmeAviFile_t *aviFile, const char *name, mmeShotType_t type, int width, int height, float fps, const byte *soundBuf, int size );
 void aviClose( mmeAviFile_t *aviFile );
 
-void MME_AccumClearSSE( void *w, const void *r, short int mul, int count );
-void MME_AccumAddSSE( void* w, const void* r, short int mul, int count );
-void MME_AccumShiftSSE( const void *r, void *w, int count );
-
 void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const void *add );
 void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index );
 void R_MME_BlurAccumShift( mmeBlurBlock_t *block  );
