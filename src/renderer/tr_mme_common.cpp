@@ -272,6 +272,35 @@ void blurCreate( mmeBlurControl_t* control, const char* type, int frames ) {
 #endif
 }
 
+static void MME_AccumClear( void * __restrict__ w, const void * __restrict__ r, short mul, int count ) {
+	const byte (*reader)[8] = (const byte(*)[8]) r;
+	int32_t (*writer)[8] = (int32_t(*)[8]) w;
+	int32_t intmul = mul;
+
+	for ( int i = 0; i < count; i++ )
+		for ( int j = 0; j < 8; j++ )
+			writer[i][j] = intmul * reader[i][j];
+}
+
+static void MME_AccumAdd( void * __restrict__ w, const void * __restrict__ r, short mul, int count ) {
+	const byte (*reader)[8] = (const byte(*)[8]) r;
+	int32_t (*writer)[8] = (int32_t(*)[8]) w;
+	int32_t intmul = mul;
+
+	for ( int i = 0; i < count; i++ )
+		for ( int j = 0; j < 8; j++ )
+			writer[i][j] += intmul * reader[i][j];
+}
+
+static void MME_AccumShift( const void *r, void *w, int count ) {
+	const int32_t (*reader)[8] = (const int32_t(*)[8]) r;
+	byte (*writer)[8] = (byte(*)[8]) w;
+
+	for ( int i = 0; i < count; i++ )
+		for ( int j = 0; j < 8; j++ )
+			writer[i][j] = reader[i][j] >> 15;
+}
+
 #ifndef ARCH_X86_64
 static void MME_AccumClearMMX( void* w, const void* r, short mul, int count ) {
 	const __m64 * reader = (const __m64 *) r;
