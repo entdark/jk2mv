@@ -288,9 +288,9 @@ static void MME_AccumAdd( void * __restrict__ w, const void * __restrict__ r, sh
 			writer[i][j] += intmul * reader[i][j];
 }
 
-static void MME_AccumShift( const void *r, void *w, int count ) {
-	const int32_t (*reader)[8] = (const int32_t(*)[8]) r;
-	byte (*writer)[8] = (byte(*)[8]) w;
+static void MME_AccumShift( void *rw, int count ) {
+	const int32_t (*reader)[8] = (const int32_t(*)[8]) rw;
+	byte (*writer)[8] = (byte(*)[8]) rw;
 
 	for ( int i = 0; i < count; i++ )
 		for ( int j = 0; j < 8; j++ )
@@ -363,9 +363,9 @@ static void MME_AccumAddSSE( void * __restrict__ w, const void * __restrict__ r,
 	}
 }
 
-static void MME_AccumShiftSSE( const void *r, void *w, int count ) {
-	const __m128i * reader = (const __m128i *) r;
-	__m128i *writer = (__m128i *) w;
+static void MME_AccumShiftSSE( void *rw, int count ) {
+	const __m128i * reader = (const __m128i *) rw;
+	__m128i *writer = (__m128i *) rw;
 	int i;
 	__m128i work0, work1, work2, work3;
 	/* Handle 4 at once */
@@ -427,9 +427,9 @@ static void MME_AccumAddMMX( void *w, const void* r, short mul, int count ) {
 	 _mm_empty();
 }
 
-static void MME_AccumShiftMMX( const void  *r, void *w, int count ) {
-	const __m64 * reader = (const __m64 *) r;
-	__m64 *writer = (__m64 *) w;
+static void MME_AccumShiftMMX( void *rw, int count ) {
+	const __m64 * reader = (const __m64 *) rw;
+	__m64 *writer = (__m64 *) rw;
 
 	int i;
 	__m64 work0, work1, work2, work3;
@@ -480,10 +480,10 @@ void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index ) {
 void R_MME_BlurAccumShift( mmeBlurBlock_t *block  ) {
 #if id386 || idx64
 	if ( mme_cpuSSE2->integer )
-		MME_AccumShiftSSE( block->accum, block->accum, block->count );
+		MME_AccumShiftSSE( block->accum, block->count );
 	else
 #endif
-		MME_AccumShift( block->accum, block->accum, block->count );
+		MME_AccumShift( block->accum, block->count );
 }
 
 //Replace rad with _rad gogo includes
