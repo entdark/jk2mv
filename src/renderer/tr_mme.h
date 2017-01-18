@@ -68,6 +68,7 @@ void aviClose( mmeAviFile_t *aviFile );
 void R_MME_BlurAccumAdd( mmeBlurBlock_t *block, const void *add );
 void R_MME_BlurOverlapAdd( mmeBlurBlock_t *block, int index );
 void R_MME_BlurAccumShift( mmeBlurBlock_t *block  );
+byte * R_MME_BlurOverlapBuf( mmeBlurBlock_t *block );
 void blurCreate( mmeBlurControl_t* control, const char* type, int frames );
 void R_MME_JitterTable(float *jitarr, int num);
 
@@ -84,4 +85,3 @@ extern cvar_t	*mme_blurStrength;
 extern cvar_t	*mme_dofFrames;
 extern cvar_t	*mme_dofRadius;
 
-extern ID_INLINE byte * R_MME_BlurOverlapBuf( mmeBlurBlock_t *block );

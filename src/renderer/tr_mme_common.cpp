@@ -158,7 +158,7 @@ void R_MME_SaveShot( mmeShot_t *shot, int width, int height, float fps, byte *in
 	ri.Hunk_FreeTempMemory( outBuf );
 }
 
-ID_INLINE byte * R_MME_BlurOverlapBuf(mmeBlurBlock_t *block) {
+byte * R_MME_BlurOverlapBuf(mmeBlurBlock_t *block) {
 	mmeBlurControl_t* control = block->control;
 	int index = control->overlapIndex % control->overlapFrames;
 	return (byte *)((int64_t *)block->overlap + block->count * index);
