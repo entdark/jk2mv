@@ -4055,9 +4055,7 @@ fileHandle_t FS_PipeOpen(const char *qcmd, const char *qpath, const char *mode) 
     Q_strncpyz(fsh[f].name, qpath, sizeof(fsh[f].name));
     
     fsh[f].handleSync = qfalse;
-#ifdef USE_AIO
-    fsh[f].handleAsync = qfalse;
-#endif
+
     if (!fsh[f].handleFiles.file.o) {
         f = 0;
     }
