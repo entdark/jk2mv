@@ -7,13 +7,14 @@
 
 float WAVEVALUENEW(genFunc_t func, float base, float amplitude, float phase, float freq) {
 	double t = (tr.refdef.time ? (double)(tr.refdef.time * 0.001) : tess.shaderTime);
-	if (func == GF_SAWTOOTH || func == GF_INVERSE_SAWTOOTH)
+	if (func == GF_SAWTOOTH || func == GF_INVERSE_SAWTOOTH) {
 		//maybe some other shaders require that too
 		//linear + clamp require tess.shaderTime
 		if (!Q_stricmp(tess.shader->name, "halfShieldShell"))
 			t = tr.refdef.time * 0.001;
 		else
 			t = tess.shaderTime;
+	}
 	double index = (double)phase + t * (double)freq + (double)tr.refdef.timeFraction * (double)freq * 0.001;
 	index = fmod(index, 1.0);
 

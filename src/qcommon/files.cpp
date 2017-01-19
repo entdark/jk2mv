@@ -3985,7 +3985,7 @@ fileHandle_t FS_PipeOpen(const char *qcmd, const char *qpath, const char *mode) 
     
 	Com_sprintf(temp, sizeof(temp), "/%s", qcmd);
 	FS_ReplaceSeparators(temp);
-	if (space = strchr(temp, ' ')) {
+	if ((space = strchr(temp, ' '))) {
 		char quotedCmd[2048];
 		Q_strncpyz(quotedCmd, temp, sizeof(quotedCmd));
 		quotedCmd[(space-temp)] = '\0';

@@ -3375,7 +3375,7 @@ static int SaveTGA_RLERGB(byte *out, const int image_width, const int image_heig
 
 static int SaveTGA_RLEGray(byte *out, const int image_width, const int image_height, const void* image_buffer) {
 	int y;
-	unsigned char *inBuf = (unsigned char*)image_buffer;
+	const unsigned char *inBuf = (const unsigned char*)image_buffer;
 
 	int dataSize = 0;
 
@@ -3456,6 +3456,7 @@ int SaveTGA(int image_compressed, int image_width, int image_height, mmeShotType
 		bitDepth = 8;
 		break;
 	case mmeShotTypeRGB:
+	case mmeShotTypeBGR:
 		bitDepth = 24;
 		tgaFormat = 2;
 		break;
@@ -3506,6 +3507,10 @@ int SaveTGA(int image_compressed, int image_width, int image_height, mmeShotType
 			}
 			filesize += image_width*image_height * 3;
 			break;
+		case mmeShotTypeBGR:
+			Com_Memcpy(buftemp, image_buffer, image_width * image_height * 3);
+			filesize += image_width * image_height * 3;
+			break;
 		case mmeShotTypeGray:
 			/* Stupid copying of data here but oh well */
 			Com_Memcpy(buftemp, image_buffer, image_width*image_height);
@@ -3517,6 +3522,9 @@ int SaveTGA(int image_compressed, int image_width, int image_height, mmeShotType
 		switch (image_type) {
 		case mmeShotTypeRGB:
 			filesize += SaveTGA_RLERGB(out_buffer + filesize, image_width, image_height, image_buffer);
+			break;
+		case mmeShotTypeBGR:
+			Com_Error( ERR_FATAL, "SaveTGA: wrong shot type" );
 			break;
 		case mmeShotTypeRGBA:
 			filesize += SaveTGA_RLERGBA(out_buffer + filesize, image_width, image_height, image_buffer);
@@ -3579,26 +3587,31 @@ int SavePNG(int compresslevel, int image_width, int image_height, mmeShotType_t 
 	png_set_compression_window_bits(png_ptr, 15);
 	png_set_compression_method(png_ptr, 8);
 	png_set_compression_buffer_size(png_ptr, 8192);
-	if (image_type == mmeShotTypeRGB) {
+	switch(image_type) {
+	case mmeShotTypeRGB:
 		rowSize = image_width * 3;
 		png_set_IHDR(png_ptr, info_ptr, image_width, image_height, 8,
 			PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 			PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 		png_write_info(png_ptr, info_ptr);
-	}
-	else if (image_type == mmeShotTypeRGBA) {
+		break;
+	case mmeShotTypeBGR:
+		Com_Error( ERR_FATAL, "SavePNG: wrong shot type" );
+		break;
+	case mmeShotTypeRGBA:
 		rowSize = image_width * 4;
 		png_set_IHDR(png_ptr, info_ptr, image_width, image_height, 8,
 			PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
 			PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 		png_write_info(png_ptr, info_ptr);
-	}
-	else if (image_type == mmeShotTypeGray) {
+		break;
+	case mmeShotTypeGray:
 		rowSize = image_width * 1;
 		png_set_IHDR(png_ptr, info_ptr, image_width, image_height, 8,
 			PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_NONE,
 			PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 		png_write_info(png_ptr, info_ptr);
+		break;
 	}
 	/*Allocate an array of scanline pointers*/
 	row_pointers = (png_bytep*)malloc(image_height * sizeof(png_bytep));

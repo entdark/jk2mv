@@ -304,7 +304,7 @@ static qhandle_t aviPipeOpen(const char *name, int width, int height, float fps)
 static qboolean aviOpen( mmeAviFile_t *aviFile, const char *name, mmeShotType_t type, int width, int height, float fps, qboolean audio) {
 	char fileName[MAX_OSPATH];
 	int i;
-	char aviHeader[AVI_HEADER_SIZE];
+	// char aviHeader[AVI_HEADER_SIZE];
 
 	if (aviFile->f) {
 		Com_Printf( "wtf openAvi on an open handler" );
@@ -421,6 +421,9 @@ void mmeAviShot( mmeAviFile_t *aviFile, const char *name, mmeShotType_t type, in
 			break;
 		case mmeShotTypeBGR:
 			outSize = width * height * 3;
+			break;
+		case mmeShotTypeRGBA:
+			Com_Error( ERR_FATAL, "mmeAviShot: wrong shot type" );
 			break;
 		} 
 	} else if ( aviFile->format == 1 ) {

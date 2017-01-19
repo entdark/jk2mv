@@ -941,7 +941,7 @@ static void R_ScreenShotDOF_f(void) {
         || !ext[0]) {
 		ext = "png";
 	}
-	if (name = R_ScreenShotName(cmd, ext, fileName)) {
+	if ((name = R_ScreenShotName(cmd, ext, fileName))) {
 		float focus = atof(ri.Cmd_Argv(2));
 		float radius = atof(ri.Cmd_Argv(3));
 		if (!focus)

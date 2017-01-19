@@ -194,12 +194,12 @@ static int S_WavSeek( struct openSound_s *open, int samples ) {
 	wavOpen_t *wav;
 	int wantPos;
 
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	wav = (wavOpen_t *)(open->data);
 	if (wav->bits == 8)
 		wantPos = samples + wav->dataStart;
-	else if (wav->bits == 16)
+	else // if (wav->bits == 16)
 		wantPos = samples * 2 + wav->dataStart;
 	S_StreamSeek( open, wantPos );
 	return wantPos;
@@ -210,7 +210,7 @@ static int S_WavRead( openSound_t *open, qboolean stereo, int size, short *data 
 	int bufSize, i, done;
 	wavOpen_t *wav;
 	
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 
 	wav = (wavOpen_t *)(open->data);
@@ -398,7 +398,7 @@ static int S_MP3Fill( openSound_t *open ) {
 	unsigned char *readStart;
 	mp3Open_t *mp3;
 
-	if (!open || !open->data)
+	if (!open)
 		return 0;
 
 	mp3 = (mp3Open_t *) open->data;
@@ -440,7 +440,7 @@ static int S_MP3Read( openSound_t *open, qboolean stereo, int size, short *data 
 	mp3Open_t *mp3;
 	int done;
 
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	mp3 = (mp3Open_t *)(open->data);
 	done = 0;
@@ -525,7 +525,7 @@ static int S_MP3Seek( struct openSound_s *open, int samples ) {
 	mp3Open_t *mp3;
 	int index, frame, seek;
 
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	mp3 = (mp3Open_t *)(open->data);
 	frame = samples / mp3->frameSamples;
@@ -552,7 +552,7 @@ static int S_MP3Seek( struct openSound_s *open, int samples ) {
 
 static void S_MP3Close( openSound_t *open) {
 	mp3Open_t *mp3;
-	if (!open || !open->data )
+	if (!open)
 		return;
 	mp3 = (mp3Open_t *)(open->data);
 	mad_stream_finish (&mp3->stream);
@@ -724,7 +724,7 @@ static int S_OggTotalSamples( openSound_t *open ) {
 	oggOpen_t *ogg;
 	int eos;
 	int totalSamples;
-	if (!open || !open->data)
+	if (!open)
 		return 0;
 	ogg = (oggOpen_t *)open->data;
 	eos = 0;
@@ -785,7 +785,7 @@ static int S_OggRead( openSound_t *open, qboolean stereo, int size, short *data 
 	int bufSize;
 	int result;
 
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	ogg = (oggOpen_t *)(open->data);
 	bufSize = 4096/ogg->info.channels;
@@ -879,7 +879,7 @@ finishSamples:
 
 static int S_OggSeek( struct openSound_s *open, int samples ) {
 	oggOpen_t *ogg;
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	ogg = (oggOpen_t *)open->data;
 	ogg->samplesLeft = 0;
@@ -890,7 +890,7 @@ static int S_OggSeek( struct openSound_s *open, int samples ) {
 
 static void S_OggClose( openSound_t *open) {
 	oggOpen_t *ogg;
-	if (!open || !open->data )
+	if (!open)
 		return;
 	ogg = (oggOpen_t *)(open->data);	
 	ogg_stream_clear (&ogg->stream);
@@ -1155,7 +1155,7 @@ static int S_FlacRead( openSound_t *open, qboolean stereo, int size, short *data
 	flacOpen_t *flac;
 	FLAC__StreamDecoderState state;
 
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	flac = (flacOpen_t *)(open->data);
 	flac->done = 0;
@@ -1194,7 +1194,7 @@ static int S_FlacRead( openSound_t *open, qboolean stereo, int size, short *data
 static int S_FlacSeek( struct openSound_s *open, int samples ) {
 	flacOpen_t *flac;
 	FLAC__StreamDecoderState state;
-	if (!open || !open->data )
+	if (!open)
 		return 0;
 	flac = (flacOpen_t *)open->data;
 	flac->samplesLeft = 0;
@@ -1226,7 +1226,7 @@ static int S_FlacSeek( struct openSound_s *open, int samples ) {
 
 static void S_FlacClose( openSound_t *open) {
 	flacOpen_t *flac;
-	if (!open || !open->data )
+	if (!open)
 		return;
 	flac = (flacOpen_t *)(open->data);	
 	FLAC__stream_decoder_delete(flac->decoder);
