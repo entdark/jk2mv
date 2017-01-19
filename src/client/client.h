@@ -147,6 +147,8 @@ typedef struct {
 	entityState_t	parseEntities[MAX_PARSE_ENTITIES];
 
 	char			*mSharedMemory;
+
+	qboolean		highPrecision;
 } clientActive_t;
 
 extern	clientActive_t		cl;
@@ -222,6 +224,7 @@ typedef struct {
 	qboolean	demowaiting;	// don't record until a non-delta message is received
 	qboolean	firstDemoFrameSkipped;
 	fileHandle_t	demofile;
+	qboolean	newDemoPlayer;
 
 	int			timeDemoFrames;		// counter of rendered frames
 	int			timeDemoStart;		// cls.realtime before first frame
@@ -460,6 +463,15 @@ extern	cvar_t	*mme_demoPrecache;
 extern	cvar_t	*mme_demoAutoNext;
 
 //=================================================
+// cl_demos
+void CL_MMEDemo_f(void);
+void CL_DemoList_f(void);
+void CL_DemoListNext_f(void);
+//void CL_DemoShutDown( void );
+void CL_DemoSetCGameTime(void);
+void demoConvert(const char *oldName, const char *newName, qboolean smoothen);
+qboolean demoPlay(const char *fileName, qboolean delDemo = qfalse);
+void demoStop(void);
 
 //
 // cl_main

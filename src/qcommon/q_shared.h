@@ -683,6 +683,8 @@ int Q_parseColor(const char *p, const vec3_t numberColors[10], float *color);
 
 #define Q_IsColorStringExt(p)	((p) && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) >= '0' && *((p)+1) <= '7') // ^[0-7]
 
+#define Q_IsColorStringNT(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= 0x7F && *((p)+1) >= 0x00 )
+
 // Default Colors
 #define COLOR_BLACK		'0'
 #define COLOR_RED		'1'
@@ -712,6 +714,7 @@ int Q_parseColor(const char *p, const vec3_t numberColors[10], float *color);
 #define COLOR_EXT_AMOUNT 16
 #define ColorIndex(c)	( ( (c) - '0' ) & 7 )
 #define ColorIndex_Extended(c) ( ((c >= '0' && c <= '9') ? ((c) - '0') : ((c) - 'a' + 1)) % COLOR_EXT_AMOUNT )
+#define ColorIndexNT(c)	( (c) & 127 )
 
 // Default Colors
 #define S_COLOR_BLACK	"^0"
@@ -734,6 +737,7 @@ int Q_parseColor(const char *p, const vec3_t numberColors[10], float *color);
 #define S_COLOR_LT_TRANSPARENT "^o"
 
 extern vec4_t	g_color_table[];
+extern vec4_t	g_color_table_nt[128];
 
 #define	MAKERGB( v, r, g, b ) v[0]=r;v[1]=g;v[2]=b
 #define	MAKERGBA( v, r, g, b, a ) v[0]=r;v[1]=g;v[2]=b;v[3]=a
@@ -954,6 +958,9 @@ float AngleNormalize360 ( float angle );
 float AngleNormalize180 ( float angle );
 float AngleDelta ( float angle1, float angle2 );
 
+void LerpOrigin( const vec3_t from, const vec3_t to, vec3_t out, float lerp );
+void LerpAngles( const vec3_t from, const vec3_t to, vec3_t out, float lerp );
+
 qboolean PlaneFromPoints( vec4_t plane, const vec3_t a, const vec3_t b, const vec3_t c );
 void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal );
 void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, float degrees );
@@ -1069,9 +1076,9 @@ void	Q_strncpyz( char *dest, const char *src, size_t destsize );
 void	Q_strcat( char *dest, size_t size, const char *src );
 
 // strlen that discounts Quake color sequences
-int Q_PrintStrlen( const char *string, qboolean use102color );
+int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModDetected );
 // removes color sequences from string
-char *Q_CleanStr( char *string, qboolean use102color ) ;
+char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModDetected ) ;
 
 //=============================================
 
@@ -2344,5 +2351,7 @@ typedef union byteAlias_u {
 #define Q_max(x,y) ((x)>(y)?(x):(y))
 
 #define MME_SAMPLERATE	44100 //jo is full of 44khz mp3
+
+extern int demo_protocols[];
 
 #endif	// __Q_SHARED_H

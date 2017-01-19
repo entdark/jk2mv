@@ -19,7 +19,9 @@ void FX_AddScheduledEffects( void );
 
 int			FX_InitSystem( void );	// called in CG_Init to purge the fx system.
 qboolean	FX_FreeSystem( void );	// ditches all active effects;
-void		FX_AdjustTime_Pos( int time, vec3_t refdef_vieworg, vec3_t refdef_viewaxis[3] );
+void		FX_AdjustTime_Pos( int time, float timeFraction, float frametime, vec3_t refdef_vieworg, vec3_t refdef_viewaxis[3] );
+
+void		FX_RandomSeed( int time, float timeFraction );
 
 
 #endif // FX_EXPORT_H_INC

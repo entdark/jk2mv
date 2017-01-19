@@ -453,7 +453,7 @@ void Field_VariableSizeDraw( field_t *edit, int x, int y, qboolean smallSize, qb
 		cursorChar = 10;
 	}
 
-	i = drawLen - ( Q_PrintStrlen( str, (qboolean)MV_USE102COLOR ) );
+	i = drawLen - ( Q_PrintStrlen( str, (qboolean)MV_USE102COLOR, ntModDetected ) );
 
 	if ( smallSize ) {
 		SCR_DrawSmallChar( x + ( edit->cursor - prestep - i ) * con.charWidth, y, cursorChar );

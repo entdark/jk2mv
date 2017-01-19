@@ -14,7 +14,7 @@
 // MV_MIN_VERSION is the minimum required JK2MV version which implements this API-Level.
 // All future JK2MV versions are guaranteed to implement this API-Level.
 // ----------------------------------------------------------------------------------------- //
-#define MV_APILEVEL 2
+#define MV_APILEVEL 3
 #define MV_MIN_VERSION "1.2"
 // ----------------------------------------------------------------------------------------- //
 
@@ -47,10 +47,50 @@ typedef enum {
 // ******** SYSCALLS ******** //
 
 // qboolean trap_MVAPI_ControlFixes(mvfix_t fixes);
-#define MVAPI_CONTROL_FIXES 703                  /* asm: -704 */
+#define MVAPI_CONTROL_FIXES 703					/* asm: -704 */
 
 // mvversion_t trap_MVAPI_GetVersion(void);
-#define MVAPI_GET_VERSION 704                    /* asm: -705 */
+#define MVAPI_GET_VERSION 704					/* asm: -705 */
+
+// qboolean trap_MVAPI_Key_GetOverstrikeMode(void)
+#define MVAPI_KEY_GETOVERSTRIKEMODE 705			/* asm: -706 */
+
+// void trap_MVAPI_Key_SetOverstrikeMode(qboolean state)
+#define MVAPI_KEY_SETOVERSTRIKEMODE 706			/* asm: -707 */
+
+// void trap_MVAPI_S_UpdateScale(float scale)
+#define MVAPI_S_UPDATE_SCALE 707				/* asm: -708 */
+
+// void trap_MVAPI_FX_Reset(void)
+#define MVAPI_FX_RESET 708						/* asm: -709 */
+
+// void trap_MVAPI_R_RatioFix(float ratio)
+#define MVAPI_R_RATIOFIX 709					/* asm: -710 */
+
+// void trap_MVAPI_RandomSeed(int time, float timeFraction)
+#define MVAPI_RANDOMSEED 710					/* asm: -711 */
+
+// void trap_MVAPI_NTDetected(qboolean detected)
+#define MVAPI_NT_DETECTED 711					/* asm: -712 */
+
+// void trap_MVAPI_HighPrecision(qboolean enabled)
+#define MVAPI_HIGH_PRECISION 712				/* asm: -713 */
+
+//MME
+// void trap_MVAPI_MME_Capture(const char *baseName, float fps, float focus, float radius)
+#define MVAPI_MME_CAPTURE 900					/* asm: -901 */
+
+// void trap_MVAPI_MME_BlurInfo(int* total, int* index)
+#define MVAPI_MME_BLURINFO 901					/* asm: -902 */
+
+// int trap_MVAPI_MME_SeekTime(int seekTime)
+#define MVAPI_MME_SEEKTIME 902					/* asm: -903 */
+
+// void trap_MVAPI_MME_Music(const char *musicName, float time, float length)
+#define MVAPI_MME_MUSIC 903						/* asm: -904 */
+
+// void trap_MVAPI_MME_TimeFraction(float timeFraction)
+#define MVAPI_MME_TIMEFRACTION 904				/* asm: -905 */
 
 // ******** VMCALLS ******** //
 

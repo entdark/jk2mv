@@ -87,8 +87,6 @@ qboolean Language_UsesSpaces(void);
 unsigned int AnyLanguage_ReadCharFromString( const char *psText, int *piAdvanceCount, qboolean *pbIsTrailingPunctuation/* = NULL*/ );
 
 
-void RE_FontRatioFix(const float ratio);
-
 
 #endif	// #ifndef TR_FONT_H
 

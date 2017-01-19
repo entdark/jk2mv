@@ -572,6 +572,8 @@ issues.
 
 #define	MAX_FILE_HANDLES	256 // increased from 64 in jk2mv
 
+qboolean FS_CopyFileAbsolute(char *fromOSPath, char *toOSPath);
+
 qboolean FS_CopyFile( char *fromOSPath, char *toOSPath, char *newOSPath = NULL, const int newSize = 0 );
 
 qboolean FS_Initialized();
@@ -1037,5 +1039,7 @@ int MV_StrlenSkipColors( const char *str );
 
 extern "C" long QDECL Q_ftol(float f);
 extern "C" int QDECL Q_VMftol();
+
+extern qboolean ntModDetected;
 
 #endif // _QCOMMON_H_
