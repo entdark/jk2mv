@@ -228,9 +228,6 @@ void R_BindAnimatedImage( textureBundle_t *bundle ) {
 	// exactly with waveforms of the same frequency
 	index = (uint64_t)(tess.shaderTime * (double)bundle->imageAnimationSpeed);
 
-	if ( index < 0 ) {
-		index = 0;	// may happen with shader time offsets
-	}
 	if ( bundle->oneShotAnimMap )
 	{
 		if ( index >= bundle->numImageAnimations )
