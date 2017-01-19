@@ -92,6 +92,7 @@ float	FloatSwap (const float *f);
 #define q_unreachable() abort()
 #define Q_ALIGNOF(x) __alignof(x)
 #define Q_MAX_ALIGN std::max_align_t
+#define Q_RESTRICT __restrict
 #elif defined __GNUC__ && !defined __clang__
 #define GCC_VERSION (__GNUC__ * 10000 \
     + __GNUC_MINOR__ * 100 \
@@ -108,6 +109,7 @@ float	FloatSwap (const float *f);
 #else
 #	define Q_MAX_ALIGN max_align_t
 #endif
+#define Q_RESTRICT __restrict__
 #elif defined __clang__
 #define ID_INLINE inline
 #define Q_NORETURN __attribute__((noreturn))
@@ -115,6 +117,7 @@ float	FloatSwap (const float *f);
 #define q_unreachable() __builtin_unreachable()
 #define Q_ALIGNOF(x) alignof(x)
 #define Q_MAX_ALIGN std::max_align_t
+#define Q_RESTRICT __restrict__
 #else
 #define ID_INLINE inline
 #define Q_NORETURN
@@ -122,6 +125,7 @@ float	FloatSwap (const float *f);
 #define q_unreachable() abort()
 #define Q_ALIGNOF(x) alignof(x)
 #define Q_MAX_ALIGN std::max_align_t
+#define Q_RESTRICT __restrict__
 #endif
 
 //======================= WIN32 DEFINES =================================

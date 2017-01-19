@@ -268,7 +268,7 @@ void blurCreate( mmeBlurControl_t* control, const char* type, int frames ) {
 	control->overlapIndex = 0;
 }
 
-static void MME_AccumClear( void * __restrict__ w, const void * __restrict__ r, short mul, int count ) {
+static void MME_AccumClear( void * Q_RESTRICT w, const void * Q_RESTRICT r, short mul, int count ) {
 	const byte (*reader)[8] = (const byte(*)[8]) r;
 	int32_t (*writer)[8] = (int32_t(*)[8]) w;
 	int32_t intmul = mul;
@@ -278,7 +278,7 @@ static void MME_AccumClear( void * __restrict__ w, const void * __restrict__ r, 
 			writer[i][j] = intmul * reader[i][j];
 }
 
-static void MME_AccumAdd( void * __restrict__ w, const void * __restrict__ r, short mul, int count ) {
+static void MME_AccumAdd( void * Q_RESTRICT w, const void * Q_RESTRICT r, short mul, int count ) {
 	const byte (*reader)[8] = (const byte(*)[8]) r;
 	int32_t (*writer)[8] = (int32_t(*)[8]) w;
 	int32_t intmul = mul;
@@ -303,7 +303,7 @@ static void MME_AccumShift( void *rw, int count ) {
 
 #include <emmintrin.h>
 
-static void MME_AccumClearSSE( void * __restrict__ w, const void * __restrict__ r, short int mul, int count ) {
+static void MME_AccumClearSSE( void * Q_RESTRICT w, const void * Q_RESTRICT r, short int mul, int count ) {
 	const __m128i * reader = (const __m128i *) r;
 	__m128i *writer = (__m128i *) w;
 	int i;
@@ -331,7 +331,7 @@ static void MME_AccumClearSSE( void * __restrict__ w, const void * __restrict__ 
 	}
 }
 
-static void MME_AccumAddSSE( void * __restrict__ w, const void * __restrict__ r, short int mul, int count ) {
+static void MME_AccumAddSSE( void * Q_RESTRICT w, const void * Q_RESTRICT r, short int mul, int count ) {
 	int i;
 	const __m128i * reader = (const __m128i *) r;
 	__m128i *writer = (__m128i *) w;
