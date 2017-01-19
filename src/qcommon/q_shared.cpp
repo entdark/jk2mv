@@ -912,7 +912,7 @@ void Q_strcat(char *dest, size_t size, const char *src) {
 }
 
 
-int Q_PrintStrlen(const char *string, qboolean use102color) {
+int Q_PrintStrlen(const char *string, qboolean use102color, qboolean ntModDetected) {
 	int			len;
 	const char	*p;
 
@@ -923,7 +923,11 @@ int Q_PrintStrlen(const char *string, qboolean use102color) {
 	len = 0;
 	p = string;
 	while (*p) {
-		if (Q_IsColorString(p) || (use102color && Q_IsColorString_1_02(p))) {
+		if ((use102color && ntModDetected && Q_IsColorStringNT(p))
+			|| Q_IsColorString(p)
+			|| (use102color && Q_IsColorString_1_02(p))
+			)
+		{
 			p += 2;
 			continue;
 		}
@@ -935,7 +939,7 @@ int Q_PrintStrlen(const char *string, qboolean use102color) {
 }
 
 
-char *Q_CleanStr(char *string, qboolean use102color) {
+char *Q_CleanStr(char *string, qboolean use102color, qboolean ntModDetected) {
 	char*	d;
 	char*	s;
 	int		c;
@@ -943,7 +947,11 @@ char *Q_CleanStr(char *string, qboolean use102color) {
 	s = string;
 	d = string;
 	while ((c = *s) != 0) {
-		if (Q_IsColorString(s) || (use102color && Q_IsColorString_1_02(s))) {
+		if ((use102color && ntModDetected && Q_IsColorStringNT(s))
+			|| Q_IsColorString(s)
+			|| (use102color && Q_IsColorString_1_02(s))
+			)
+		{
 			s++;
 		} else if (c >= 0x20 && c <= 0x7E) {
 			*d++ = c;
@@ -1477,3 +1485,7 @@ int Com_HexStrToInt(const char *str) {
 
 	return -1;
 }
+
+//qboolean demo15detected;
+int demo_protocols[] =
+{ 15, 16, 0 };

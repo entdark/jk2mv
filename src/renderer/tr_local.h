@@ -1138,6 +1138,8 @@ typedef struct {
 	float					inverseSawToothTable[FUNCTABLE_SIZE];
 	float					fogTable[FOG_TABLE_SIZE];
 
+	float					ratio;
+
 	// gamma correction
 	GLuint gammaVertexShader, gammaPixelShader;
 	GLuint gammaLUTImage;

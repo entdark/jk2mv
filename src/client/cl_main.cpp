@@ -488,6 +488,38 @@ void CL_ReadDemoMessage( void ) {
 	CL_ParseServerMessage( &buf );
 }
 
+bool demoCheckFor103 = false;	//When a protocol15 demo has been started, we need to ascertain whether the demo is 1.03 or 1.02 version.
+
+/*
+====================
+CL_WalkDemoExt
+====================
+*/
+static char *CL_WalkDemoExt(const char *arg, char *name, int *demofile) {
+	static char demoExt[8];
+	int i = 0;
+	*demofile = 0;
+	while(demo_protocols[i]) {
+		Com_sprintf (name, MAX_OSPATH, "demos/%s.dm_%d", arg, demo_protocols[i]);
+		FS_FOpenFileRead( name, demofile, qtrue );
+		if (*demofile) {
+			Com_Printf("Demo file: %s\n", name);
+			if (demo_protocols[i] == 15) {
+				MV_SetCurrentGameversion(VERSION_1_02);
+				demoCheckFor103 = true;
+			} else {
+				MV_SetCurrentGameversion(VERSION_1_04);
+			}
+			Com_sprintf(demoExt, sizeof(demoExt), ".dm_%d", demo_protocols[i]);
+			return demoExt;
+		}
+		else
+			Com_Printf("Not found: %s\n", name);
+		i++;
+	}
+	return "";
+}
+
 /*
 ====================
 CL_PlayDemo_f
@@ -497,73 +529,102 @@ demo <demoname>
 ====================
 */
 
-bool demoCheckFor103 = false;	//When a protocol15 demo has been started, we need to ascertain whether the demo is 1.03 or 1.02 version.
-
 qboolean CL_ServerVersionIs103 (const char *versionstr) {
 	return strstr(versionstr, "v1.03") ? qtrue : qfalse;
 }
 
 void CL_PlayDemo_f( void ) {
-	char		name[MAX_OSPATH]/*, extension[32]*/;
-	char		*arg;
+	char		name[MAX_OSPATH], *testName, testNameActual[MAX_OSPATH];
+	char		*ext = NULL;
+	qboolean	haveConvert, del = qfalse;
+	cvar_t		*fs_game;
 
-	if (Cmd_Argc() != 2) {
+	if (Cmd_Argc() < 2) {
 		Com_Printf ("demo <demoname>\n");
 		return;
+	}
+	if (Cmd_Argc() >= 3 && !Q_stricmp(Cmd_Argv(2), "del")) {
+		del = qtrue;
+	}
+
+	fs_game = Cvar_FindVar ("fs_game" );
+	if (!fs_game)
+		return;
+	haveConvert = (qboolean)(mme_demoConvert->integer && !Q_stricmp( fs_game->string, "mme" ));
+	
+	if (del) {
+		ext = strstr(Cmd_Argv(1), ".mme");
+		if (!ext) {
+			int i = 0;
+			while (demo_protocols[i]) {
+				ext = strstr(Cmd_Argv(1), va(".dm_%d", demo_protocols[i]));
+				if (ext && *ext) {
+					break;
+				}
+				i++;
+			}
+		}
+		if (ext && *ext) {
+			char temp[MAX_OSPATH] = "_";
+			char *demos = (!Q_stricmp(ext, ".mme")) ? "mmedemos" : "demos";
+			while (FS_FileExists(va("%s/%s%s", demos, temp, ext))) {
+				if (strlen(temp) >= MAX_OSPATH)
+					break;
+				Q_strcat(temp, sizeof(temp), "_");
+			}
+			if (FS_CopyFileAbsolute(Cmd_Argv(1), va("%s/%s%s", demos, temp, ext))) {
+				Q_strncpyz(testNameActual, temp, sizeof(testNameActual));
+			} else {
+				Q_strncpyz(testNameActual, Cmd_Argv(1), sizeof(testNameActual));
+			}
+		}
+	} else {
+		Q_strncpyz(testNameActual, Cmd_Argv(1), sizeof(testNameActual));
 	}
 
 	// make sure a local server is killed
 	Cvar_Set( "sv_killserver", "1" );
-
 	CL_Disconnect( qtrue );
 
-	/* MrE: 2000-09-13: now called in CL_DownloadsComplete
-	CL_FlushMemory( );
-	*/
+	testName = testNameActual;
+	// check for an extension .dm_?? (?? is protocol)
+	ext = testName + strlen(testName) - 6;
+	if ((strlen(testName) > 6) && (ext[0] == '.') && ((ext[1] == 'd') || (ext[1] == 'D')) && ((ext[2] == 'm') || (ext[2] == 'M')) && (ext[3] == '_')) {
+		ext[0] = 0;
+	}
 
-	// open the demo file
-	arg = Cmd_Argv(1);
+	Cvar_Set( "mme_demoFileName", testName );
 
-	if ( !Q_stricmp( arg + strlen(arg) - strlen(".dm_15"), ".dm_15" ) || !Q_stricmp( arg + strlen(arg) - strlen(".dm_16"), ".dm_16" ) )
-	{ // Load "dm_15" and "dm_16" demos.
-		Com_sprintf (name, sizeof(name), "demos/%s", arg);
-
-		FS_FOpenFileRead( name, &clc.demofile, qtrue );
-		if (!clc.demofile)
-		{
-			if (!Q_stricmp(arg, "(null)"))
-			{
-				Com_Error( ERR_DROP, "%s", SP_GetStringTextString("CON_TEXT_NO_DEMO_SELECTED") );
-			}
-			else
-			{
-				Com_Error( ERR_DROP, "couldn't open %s", name);
-			}
-			return;
+	MV_SetCurrentGameversion(VERSION_UNDEF); //reset
+	if ( haveConvert ) {
+		Com_sprintf (name, MAX_OSPATH, "mmedemos/%s.mme", testName );
+		if (FS_FileExists( name )) {
+			char empty1[MAX_OSPATH];
+			int empty2;
+			CL_WalkDemoExt( testName, empty1, &empty2 ); //do that to set demo15detected if needed
+			if (demoPlay( name, del))
+				return;
 		}
 	}
-	else
-	{
-		// Check for both, "dm_15" and "dm_16".
-		Com_sprintf(name, sizeof(name), "demos/%s.dm_15", arg);
-		FS_FOpenFileRead( name, &clc.demofile, qtrue );
-		if ( !clc.demofile )
-		{
-			Com_sprintf(name, sizeof(name), "demos/%s.dm_16", arg);
-			FS_FOpenFileRead( name, &clc.demofile, qtrue );
-			if ( !clc.demofile )
-			{
-				if (!Q_stricmp(arg, "(null)"))
-				{
-					Com_Error( ERR_DROP, "%s", SP_GetStringTextString("CON_TEXT_NO_DEMO_SELECTED") );
-				}
-				else
-				{
-					Com_Error( ERR_DROP, "couldn't open demos/%s.dm_15 or demos/%s.dm_16", arg, arg);
-				}
-				return;
-			}
-		}
+
+	MV_SetCurrentGameversion(VERSION_UNDEF); //reset
+	CL_WalkDemoExt(testName, name, &clc.demofile);
+	if (!clc.demofile) {
+		Com_Error( ERR_DROP, "couldn't open %s", name);
+		return;
+	} else if ( haveConvert ) {
+		char mmeName[MAX_OSPATH];
+
+		FS_FCloseFile( clc.demofile );
+		clc.demofile = 0;
+
+		Com_sprintf( mmeName, sizeof( mmeName ), "mmedemos/%s", testName );
+		demoConvert( name, mmeName, (qboolean)mme_demoSmoothen->integer );
+		Q_strcat( mmeName , sizeof( mmeName ), ".mme" );
+		if (demoPlay( mmeName, del ))
+			return;
+		Com_Printf("Can't seem to play demo %s\n", testName );
+
 	}
 	Q_strncpyz( clc.demoName, Cmd_Argv(1), sizeof( clc.demoName ) );
 
@@ -574,15 +635,6 @@ void CL_PlayDemo_f( void ) {
 	com_demoplaying = qtrue;
 
 	Q_strncpyz( cls.servername, Cmd_Argv(1), sizeof( cls.servername ) );
-
-	// Set the protocol according to the the demo-file.
-	if ( !Q_stricmp( name + strlen(name) - strlen(".dm_15"), ".dm_15" ) ) {
-		MV_SetCurrentGameversion(VERSION_1_02);
-		demoCheckFor103 = true;	//if this demo happens to be a 1.03 demo, check for that in CL_ParseGamestate
-	}
-	else if ( !Q_stricmp( name + strlen(name) - strlen(".dm_16"), ".dm_16" ) ) {
-		MV_SetCurrentGameversion(VERSION_1_04);
-	}
 
 	// read demo messages until connected
 	while ( cls.state >= CA_CONNECTED && cls.state < CA_PRIMED ) {
@@ -782,6 +834,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 		CL_StopRecord_f ();
 	}
 
+	ntModDetected = qfalse;
+
 	com_demoplaying = qfalse;
 
 	CL_KillDownload();
@@ -789,6 +843,10 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	if ( clc.demofile ) {
 		FS_FCloseFile( clc.demofile );
 		clc.demofile = 0;
+	}
+	
+	if (clc.newDemoPlayer) {
+		demoStop( );
 	}
 
 	CL_BlacklistWriteCloseFile();
@@ -2569,7 +2627,11 @@ void CL_Frame ( int msec ) {
 	CL_CheckForResend();
 
 	// decide on the serverTime to render
-	CL_SetCGameTime();
+	if (!clc.newDemoPlayer) {
+		CL_SetCGameTime();
+	} else {
+		CL_DemoSetCGameTime();
+	}
 
 	// update the screen
 	SCR_UpdateScreen();
@@ -2991,6 +3053,11 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("saveDemoLast", demoAutoSaveLast_f);
 	Cmd_AddCommand ("video", CL_VideoCapture_f);
 	Cmd_AddCommand ("videostop", CL_VideoStop_f);
+	
+	// MME commands
+	Cmd_AddCommand ("mmeDemo", CL_MMEDemo_f);
+	Cmd_AddCommand ("demoList", CL_DemoList_f);
+	Cmd_AddCommand ("demoListNext", CL_DemoListNext_f );
 
 	CL_InitRef();
 

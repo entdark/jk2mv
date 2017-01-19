@@ -475,7 +475,11 @@ void CL_ConsolePrint( const char *txt, qboolean extendedColors ) {
 	color = ColorIndex(COLOR_WHITE);
 
 	while ( (c = (unsigned char) *txt) != 0 ) {
-		if ( Q_IsColorString( (unsigned char*) txt ) ||
+		if ( !extendedColors && use102color && ntModDetected && Q_IsColorStringNT( (unsigned char*) txt ) ) {
+			color = ColorIndexNT( *(txt+1) );
+			txt += 2;
+			continue;
+		} else if ( Q_IsColorString( (unsigned char*) txt ) ||
 			(extendedColors && Q_IsColorString_Extended( (unsigned char*)txt )) ||
 			  	( use102color && Q_IsColorString_1_02( (unsigned char*) txt ) ) ) {
 			if (extendedColors) color = ColorIndex_Extended( *(txt+1) );
@@ -590,6 +594,8 @@ void Con_DrawNotify (void)
 		iPixelHeightToAdvance = 1.3 * re.Font_HeightPixels(iFontIndex, fFontScale);
 	}
 
+	const bool use102color = MV_USE102COLOR;
+
 	v = 0;
 	for (i= con.current-NUM_CON_TIMES+1 ; i<=con.current ; i++)
 	{
@@ -646,8 +652,11 @@ void Con_DrawNotify (void)
 				if ( (text[x] & 0xff) == ' ' ) {
 					continue;
 				}
-				if ( ( (text[x]>>8) ) != currentColor ) {
-					currentColor = (text[x]>>8);
+				if ( use102color && ntModDetected && ( (text[x]>>8)&127 ) != currentColor ) {
+					currentColor = (text[x]>>8)&127;
+					re.SetColor( g_color_table_nt[currentColor] );
+				} else if ( !ntModDetected && ( (text[x]>>8)&15 ) != currentColor ) {
+					currentColor = (text[x]>>8)&15;
 					re.SetColor( g_color_table[currentColor] );
 				}
 				if (!cl_conXOffset)
@@ -771,6 +780,8 @@ void Con_DrawSolidConsole( float frac ) {
 		iPixelHeightToAdvance = 1.3 * re.Font_HeightPixels(iFontIndex, fFontScale);
 	}
 
+	const bool use102color = MV_USE102COLOR;
+
 	for (i=0 ; i<rows ; i++, y -= iPixelHeightToAdvance, row--)
 	{
 		if (row < 0)
@@ -814,8 +825,11 @@ void Con_DrawSolidConsole( float frac ) {
 					continue;
 				}
 
-				if ( ( (text[x]>>8) ) != currentColor ) {
-					currentColor = (text[x]>>8);
+				if ( use102color && ntModDetected && ( (text[x]>>8)&127 ) != currentColor ) {
+					currentColor = (text[x]>>8)&127;
+					re.SetColor( g_color_table_nt[currentColor] );
+				} else if ( !ntModDetected && ( (text[x]>>8)&7 ) != currentColor ) {
+					currentColor = (text[x]>>8)&7;
 					re.SetColor( g_color_table[currentColor] );
 				}
 				SCR_DrawSmallChar( (x+1)*con.charWidth, y, text[x] & 0xff );

@@ -3318,3 +3318,5 @@ int FloatAsInt( float f )
 	fi.f = f;
 	return fi.i;
 }
+
+qboolean ntModDetected = qfalse;

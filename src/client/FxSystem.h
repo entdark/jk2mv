@@ -53,9 +53,10 @@ class SFxHelper
 public:
 	int			mTime;
 	int			mOldTime;
-	int			mFrameTime;
+	float		mFrameTime;
 	bool		mTimeFrozen;
 	refdef_t	refdef;
+	float		mTimeFraction;
 
 #ifdef _DEBUG
 	int			mMainRefs;
@@ -66,10 +67,11 @@ public:
 	SFxHelper(void);
 
 	inline	int	GetTime(void) { return mTime; }
-	inline	int	GetFrameTime(void) { return mFrameTime; }
+	inline	float GetFrameTime(void) { return mFrameTime; }
 
 	void	ReInit(void);
-	void	AdjustTime_Pos( int time, vec3_t refdef_vieworg, vec3_t refdef_viewaxis[3] );
+	void	AdjustTime_Pos( int time, float timeFraction, float frametime, vec3_t refdef_vieworg, vec3_t refdef_viewaxis[3] );
+	void	RandomSeed( int time, float timeFraction );
 
 	// These functions are wrapped and used by the fx system in case it makes things a bit more portable
 	void	Print( const char *msg, ... );

@@ -87,8 +87,13 @@ qboolean FX_FreeSystem( void )
 	return (qboolean)FX_Free();
 }
 
-void FX_AdjustTime_Pos( int time, vec3_t refdef_vieworg, vec3_t refdef_viewaxis[3] )
+void FX_AdjustTime_Pos( int time, float timeFraction, float frametime, vec3_t refdef_vieworg, vec3_t refdef_viewaxis[3] )
 {
-	theFxHelper.AdjustTime_Pos( time, refdef_vieworg, refdef_viewaxis );
+	theFxHelper.AdjustTime_Pos( time, timeFraction, frametime, refdef_vieworg, refdef_viewaxis );
+}
+
+void FX_RandomSeed( int time, float timeFraction )
+{
+	theFxHelper.RandomSeed(time, timeFraction);
 }
 

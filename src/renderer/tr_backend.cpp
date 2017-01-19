@@ -1046,8 +1046,7 @@ const void *RB_RotatePic ( const void *data )
 		qglPushMatrix();
 
 		qglTranslatef(cmd->x+cmd->w,cmd->y,0);
-		//entTODO: enable ratio fix with MV API
-//		qglScalef((640.0*glConfig.vidHeight) / (480.0*glConfig.vidWidth), 1.0, 1.0);
+		qglScalef(tr.ratio, 1.0f, 1.0f);
 		qglRotatef(cmd->a, 0.0, 0.0, 1.0);
 
 		GL_Bind( image );

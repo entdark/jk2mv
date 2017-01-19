@@ -1305,6 +1305,12 @@ Ghoul2 Insert End
 
 GLuint pboIds[4];
 
+static void R_RatioFix(float ratio) {
+	if (ratio <= 0.0f)
+		ratio = 1.0f;
+	tr.ratio = ratio;
+}
+
 /*
 ===============
 R_Init
@@ -1360,6 +1366,8 @@ void R_Init( void ) {
 	R_NoiseInit();
 #endif
 	R_Register();
+
+	R_RatioFix(1.0f);
 
 	R_MME_Init();
 	R_MME_InitStereo();
@@ -1561,7 +1569,7 @@ void RE_SetLightStyle(int style, int color)
 	memcpy(styleColors[style], &color, 4);
 }
 
-static void R_DemoRandomSeed(int time, float timeFraction) {
+static void R_RandomSeed(int time, float timeFraction) {
 	srand(time + timeFraction);
 }
 
@@ -1647,9 +1655,9 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 
 	re.TimeFraction = R_MME_TimeFraction;
 
-	re.FontRatioFix = RE_FontRatioFix;
+	re.RatioFix = R_RatioFix;
 
-	re.DemoRandomSeed = R_DemoRandomSeed;
+	re.RandomSeed = R_RandomSeed;
 #endif //!DEDICATED
 	return &re;
 }

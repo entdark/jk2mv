@@ -101,8 +101,8 @@ typedef struct {
 	void	(*CaptureStereo)( const char *baseName, float fps, float focus, float radius );
 	void	(*BlurInfo)( int* total, int* index );
 	void	(*TimeFraction)( float timeFraction );
-	void	(*FontRatioFix)( float ratio );
-	void	(*DemoRandomSeed)( int time, float timeFraction );
+	void	(*RatioFix)( float ratio );
+	void	(*RandomSeed)( int time, float timeFraction );
 } refexport_t;
 
 //

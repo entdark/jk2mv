@@ -41,6 +41,12 @@ extern qboolean loadCamera(const char *name);
 extern void startCamera(int time);
 extern qboolean getCameraInfo(int time, vec3_t *origin, vec3_t *angles);
 
+extern void demoGetSnapshotNumber(int *snapNumber, int *serverTime);
+extern qboolean demoGetSnapshot(int snapNumber, snapshot_t *snap);
+extern qboolean demoGetServerCommand(int cmdNumber);
+extern void demoRenderFrame(stereoFrame_t stereo);
+extern int demoSeek(int seekTime);
+
 void FX_FeedTrail(effectTrailArgStruct_t *a);
 
 /*
@@ -787,7 +793,13 @@ intptr_t CL_CgameSystemCalls(intptr_t *args) {
 	case CG_R_FONT_STRHEIGHTPIXELS:
 		return re.Font_HeightPixels( args[1], VMF(2) );
 	case CG_R_FONT_DRAWSTRING:
-		re.Font_DrawString( args[1], args[2], (const char *)VMA(3), (const float *) VMA(4), args[5], args[6], VMF(7) );
+		{float ox, oy;
+		if (cl.highPrecision) {
+			ox = VMF(1); oy = VMF(2);
+		} else {
+			ox = args[1]; oy = args[2];
+		}
+		re.Font_DrawString( ox, oy, (const char *)VMA(3), (const float *) VMA(4), args[5], args[6], VMF(7) );}
 		return 0;
 	case CG_LANGUAGE_ISASIAN:
 		return re.Language_IsAsian();
@@ -846,12 +858,21 @@ intptr_t CL_CgameSystemCalls(intptr_t *args) {
 		CL_GetGameState( (gameState_t *)VMA(1) );
 		return 0;
 	case CG_GETCURRENTSNAPSHOTNUMBER:
-		CL_GetCurrentSnapshotNumber( (int *)VMA(1), (int *)VMA(2) );
+		if (clc.newDemoPlayer) 
+			demoGetSnapshotNumber( (int *)VMA(1), (int *)VMA(2) );
+		else
+			CL_GetCurrentSnapshotNumber( (int *)VMA(1), (int *)VMA(2) );
 		return 0;
 	case CG_GETSNAPSHOT:
-		return CL_GetSnapshot( args[1], (snapshot_t *)VMA(2) );
+		if (clc.newDemoPlayer) 
+			return demoGetSnapshot( args[1], (snapshot_t *)VMA(2) );
+		else
+			return CL_GetSnapshot( args[1], (snapshot_t *)VMA(2) );
 	case CG_GETSERVERCOMMAND:
-		return CL_GetServerCommand( args[1] );
+		if (clc.newDemoPlayer)
+			return demoGetServerCommand( args[1] );
+		else
+			return CL_GetServerCommand( args[1] );
 	case CG_GETCURRENTCMDNUMBER:
 		return CL_GetCurrentCmdNumber();
 	case CG_GETUSERCMD:
@@ -1036,7 +1057,11 @@ intptr_t CL_CgameSystemCalls(intptr_t *args) {
 		return FX_FreeSystem();
 
 	case CG_FX_ADJUST_TIME:
-		FX_AdjustTime_Pos(args[1],(float *)VMA(2),(vec3_t *)VMA(3));
+		if (cl.highPrecision) {
+			FX_AdjustTime_Pos(args[1], VMF(2), VMF(3),(float *)VMA(4),(vec3_t *)VMA(5));
+		} else {
+			FX_AdjustTime_Pos(args[1], 0.0f, cls.frametime,(float *)VMA(2),(vec3_t *)VMA(3));
+		}
 		return 0;
 
 	case CG_FX_ADDPOLY:
@@ -1321,6 +1346,47 @@ Ghoul2 Insert End
 
 	case MVAPI_GET_VERSION:
 		return (int)MV_GetCurrentGameversion();
+	
+	case MVAPI_MME_SEEKTIME:
+		return demoSeek( args[1] );
+	case MVAPI_KEY_GETOVERSTRIKEMODE:
+		return Key_GetOverstrikeMode();
+	case MVAPI_KEY_SETOVERSTRIKEMODE:
+		Key_SetOverstrikeMode( (qboolean)args[1] );
+		return 0;
+	case MVAPI_MME_CAPTURE:
+		re.Capture( (char *)VMA(1), VMF(2), VMF(3), VMF(4) );
+		re.CaptureStereo( (char *)VMA(1), VMF(2), VMF(3), VMF(4) );
+		S_MMERecord( (char *)VMA(1), 1.0f / VMF(2) );
+		return 0;
+	case MVAPI_MME_BLURINFO:
+		re.BlurInfo( (int *)VMA(1), (int *)VMA(2) );
+		return 0;
+	case MVAPI_MME_MUSIC:
+		S_MMEMusic( (const char *)VMA(1), VMF(2), VMF(3) );
+        return 0;
+	case MVAPI_MME_TIMEFRACTION:
+		re.TimeFraction(VMF(1));
+		return 0;
+	case MVAPI_R_RATIOFIX:
+		re.RatioFix(VMF(1));
+        return 0; 	
+	case MVAPI_NT_DETECTED:
+        ntModDetected = (qboolean)args[1];
+		return 0;
+	case MVAPI_RANDOMSEED:
+		re.RandomSeed( args[1], VMF(2) );
+		FX_RandomSeed( args[1], VMF(2) );
+        return 0;
+	case MVAPI_FX_RESET:
+		FX_Free();
+		return 0;
+	case MVAPI_S_UPDATE_SCALE:
+		S_UpdateScale(VMF(1));
+		return 0;
+	case MVAPI_HIGH_PRECISION:
+		cl.highPrecision = (qboolean)args[1];
+		return 0;
 
 	default:
 			assert(0); // bk010102
@@ -1430,7 +1496,11 @@ CL_CGameRendering
 =====================
 */
 void CL_CGameRendering( stereoFrame_t stereo ) {
-	VM_Call( cgvm, CG_DRAW_ACTIVE_FRAME, cl.serverTime, stereo, clc.demoplaying );
+	if (clc.newDemoPlayer) {
+		demoRenderFrame( stereo );
+	} else {
+		VM_Call( cgvm, CG_DRAW_ACTIVE_FRAME, cl.serverTime, stereo, clc.demoplaying );
+	}
 	VM_Debug( 0 );
 }
 
