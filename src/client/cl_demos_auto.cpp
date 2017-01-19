@@ -37,7 +37,7 @@ char *demoAutoFormat(const char* name) {
 
 	char playerName[MAX_QPATH], *mapName = COM_SkipPath(Info_ValueForKey((cl.gameState.stringData + cl.gameState.stringOffsets[CS_SERVERINFO]), "mapname"));
 	Q_strncpyz(playerName, Info_ValueForKey((cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS+cl.snap.ps.clientNum]), "n"), sizeof(playerName));
-	Q_CleanStr(playerName, qtrue);
+	Q_CleanStr(playerName, qtrue, ntModDetected);
 	Com_RealTime(&ct);
 	
 	format = cl_autoDemoFormat->string;

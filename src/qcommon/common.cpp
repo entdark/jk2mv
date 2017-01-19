@@ -165,7 +165,7 @@ static void Com_Puts_Ext( qboolean extendedColors, char *msg )
 #if defined(_WIN32) && defined(_DEBUG)
 	if ( *msg )
 	{
-		OutputDebugStringA ( Q_CleanStr(msg, (qboolean)MV_USE102COLOR) );
+		OutputDebugStringA ( Q_CleanStr(msg, (qboolean)MV_USE102COLOR, ntModDetected) );
 		OutputDebugStringA ("\n");
 	}
 #endif
