@@ -3068,6 +3068,8 @@ void CL_Shutdown( void ) {
 	Cmd_RemoveCommand ("forcepowers");
 	Cmd_RemoveCommand ("saveDemo");
 	Cmd_RemoveCommand ("saveDemoLast");
+	Cmd_RemoveCommand ("video");
+	Cmd_RemoveCommand ("videostop");
 
 	Cvar_Set( "cl_running", "0" );
 
