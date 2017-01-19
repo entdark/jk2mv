@@ -125,6 +125,8 @@ void CL_ShowIP_f(void);
 void CL_ServerStatus_f(void);
 void CL_ServerStatusResponse( netadr_t from, msg_t *msg );
 
+void CL_VideoStop_f(void);
+
 /*
 =======================================================================
 
@@ -638,6 +640,8 @@ CL_ShutdownAll
 =====================
 */
 void CL_ShutdownAll(void) {
+	CL_VideoStop_f();
+
 	CL_KillDownload();
 
 	// clear sounds
@@ -823,6 +827,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	// not connected to a pure server anymore
 	cl_connectedToPureServer = qfalse;
+
+	CL_VideoStop_f();
 }
 
 
@@ -1276,7 +1282,7 @@ doesn't know what graphics to reload
 =================
 */
 void CL_Vid_Restart_f( void ) {
-
+	CL_VideoStop_f();
 	// don't let them loop during the restart
 	S_StopAllSounds();
 	// shutdown the UI
@@ -2410,6 +2416,42 @@ void CL_CheckUserinfo( void ) {
 
 }
 
+
+/*
+==================
+CL_VideoCapture_f
+
+video [type] [fps] [name]
+
+Start capturing video
+==================
+*/
+void CL_VideoCapture_f(void) {
+	char *cmd = Cmd_Argv(1);
+	if (!Q_stricmp(cmd, "jpg")
+		|| !Q_stricmp(cmd, "tga")
+		|| !Q_stricmp(cmd, "png")
+		|| !Q_stricmp(cmd, "avi")
+		|| !Q_stricmp(cmd, "pipe")) {
+	} else {
+		cmd = "pipe";
+	}
+	Cvar_Set("mme_screenShotFormat", cmd);
+	cmd = Cmd_Argv(2);
+	Cvar_Set("cl_avidemo", cmd);
+	if (cl_avidemo->integer <= 0) {
+		Cvar_Set("cl_avidemo", "25");
+	}
+	cmd = Cmd_Argv(3);
+	if (!cmd[0]) {
+		cmd = "movie";
+	}
+	Cvar_Set("mov_captureName", cmd);
+}
+void CL_VideoStop_f(void) {
+	Cvar_Set("cl_avidemo", "0");
+}
+
 #ifdef G2_COLLISION_ENABLED
 extern CMiniHeap *G2VertSpaceServer;
 #endif
@@ -2445,7 +2487,10 @@ void CL_Frame ( int msec ) {
 			float frameTime, fps;
 			int blurFrames = Cvar_VariableIntegerValue("mme_blurFrames");
 			char shotName[MAX_OSPATH];
-			Com_sprintf( shotName, sizeof( shotName ), "capture/%s/%s", mme_demoFileName->string, Cvar_VariableString("mov_captureName") );
+			if (clc.demoplaying)
+				Com_sprintf(shotName, sizeof(shotName), "capture/%s/%s", mme_demoFileName->string, Cvar_VariableString("mov_captureName"));
+			else
+				Com_sprintf(shotName, sizeof(shotName), "capture/%s", Cvar_VariableString("mov_captureName"));
 			if (blurFrames < 1)
 				blurFrames = 1;
 			else if (blurFrames > 256)
@@ -2944,6 +2989,8 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("forcepowers", CL_SetForcePowers_f );
 	Cmd_AddCommand ("saveDemo", demoAutoSave_f);
 	Cmd_AddCommand ("saveDemoLast", demoAutoSaveLast_f);
+	Cmd_AddCommand ("video", CL_VideoCapture_f);
+	Cmd_AddCommand ("videostop", CL_VideoStop_f);
 
 	CL_InitRef();
 
