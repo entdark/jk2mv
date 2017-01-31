@@ -298,6 +298,7 @@ Entchannel 0 will never override a playing sound
 */
 void S_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
 	channelQueue_t *q;
+	sfxEntry_t *entry;
 
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
@@ -323,6 +324,12 @@ void S_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxH
 		q->hasOrigin = qtrue;
 	} else {
 		q->hasOrigin = qfalse;
+	}
+	entry = sfxEntries + sfxHandle;
+	if ((strstr(strlwr(entry->name), "altcharge") != NULL)) {
+		q->interrupt = 2;
+	} else if ((strstr(strlwr(entry->name), "falling") != NULL)) {
+		q->interrupt = 1;
 	}
 }
 

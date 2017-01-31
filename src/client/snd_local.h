@@ -57,6 +57,7 @@ typedef struct {
 	short		entNum;
 	char		entChan;
 	char		hasOrigin;
+	char		interrupt; //1 - any case, 2 - channel dependant
 } channelQueue_t;
 
 struct openSound_s;
