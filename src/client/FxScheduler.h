@@ -83,8 +83,7 @@ public:
 
 	void	AddHandle( int item )	{ mMediaList.push_back( item );	}
 	int		GetHandle()				{ if (mMediaList.size()==0) {return 0;}
-	else { return mMediaList[irand(0, (int)mMediaList.size() - 1)]; }
-	}
+										else {return mMediaList[(int)(qrandom() * (mMediaList.size()-1))];} }
 
 	void operator=(const CMediaHandles &that );
 
@@ -131,9 +130,9 @@ public:
 
 	inline float	GetVal(float percent) const		{return (mMin + (mMax - mMin) * percent);}
 	inline float	GetVal() const					{if(mMin == mMax){return mMin;}
-														return flrand(mMin, mMax);}
+														return qrandom() * (mMax - mMin) + mMin;}
 	inline int		GetRoundedVal() const			{if(mMin == mMax){return mMin;}
-														return (int)(flrand(mMin, mMax) + 0.5f);}
+														return (int)(qrandom() * (mMax - mMin) + mMin + 0.5f);}
 
 	inline void		ForceRange(float min,float max)	{if(mMin < min){mMin=min;} if(mMin > max){mMin=max;}
 														if(mMax < min){mMax=min;} if(mMax > max){mMax=max;}}
@@ -457,12 +456,12 @@ private:
 	void	AddPrimitiveToEffect( SEffectTemplate *fx, CPrimitiveTemplate *prim );
 	int		ParseEffect( const char *file, CGPGroup *base );
 
-	void	CreateEffect( CPrimitiveTemplate *fx, vec3_t origin, vec3_t axis[3], int lateTime, CCloud *effectCloud);
+	void	CreateEffect( CPrimitiveTemplate *fx, vec3_t origin, vec3_t axis[3], float lateTime, CCloud *effectCloud);
 
 #ifndef EFFECTSED
 #ifndef CHC // Sof2 only
 #endif
-	void	CreateEffect( CPrimitiveTemplate *fx, CFxBoltInterface *obj, int lateTime, CCloud *effectCloud);
+	void	CreateEffect( CPrimitiveTemplate *fx, CFxBoltInterface *obj, float lateTime, CCloud *effectCloud);
 #endif
 
 public:

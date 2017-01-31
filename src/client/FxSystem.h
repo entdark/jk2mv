@@ -14,6 +14,8 @@
 extern cvar_t	fx_debug;
 extern cvar_t	fx_freeze;
 
+extern cvar_t	*fx_forcePhysics;
+
 inline void Vector2Clear(vec2_t a)
 {
 	a[0] = 0.0f;

@@ -1060,7 +1060,7 @@ intptr_t CL_CgameSystemCalls(intptr_t *args) {
 		if (cl.highPrecision) {
 			FX_AdjustTime_Pos(args[1], VMF(2), VMF(3),(float *)VMA(4),(vec3_t *)VMA(5));
 		} else {
-			FX_AdjustTime_Pos(args[1], 0.0f, cls.frametime,(float *)VMA(2),(vec3_t *)VMA(3));
+			FX_AdjustTime_Pos(args[1], 0.0f, cl.serverTime-cl.serverTimeLast,(float *)VMA(2),(vec3_t *)VMA(3));
 		}
 		return 0;
 
@@ -1662,7 +1662,7 @@ void CL_SetCGameTime( void ) {
 	}
 	cl.oldFrameServerTime = cl.snap.serverTime;
 
-
+	cl.serverTimeLast = cl.serverTime;
 	// get our current view of time
 
 	if ( clc.demoplaying && cl_freezeDemo->integer ) {

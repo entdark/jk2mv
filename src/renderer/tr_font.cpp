@@ -855,7 +855,7 @@ void RE_Font_DrawString(float ox, float oy, const char *psText, const float *rgb
 		if ((MV_GetCurrentGameversion() == VERSION_1_02 || mv_coloredTextShadows->integer == 1) && mv_coloredTextShadows->integer) {
 			int i = 0, r = 0;
 			char dropShadowText[1024];
-			static const vec4_t v4DKGREY2 = { 0.15f, 0.15f, 0.15f, 1 };
+			const vec4_t v4DKGREY2 = {0.15f, 0.15f, 0.15f, rgba?rgba[3]:1.0f};
 
 			offset = Round(curfont->GetPointSize() * fScale * 0.075f);
 
@@ -878,7 +878,7 @@ void RE_Font_DrawString(float ox, float oy, const char *psText, const float *rgb
 		}
 		else
 		{
-			static const vec4_t v4DKGREY2 = {0.15f, 0.15f, 0.15f, 1};
+			const vec4_t v4DKGREY2 = {0.15f, 0.15f, 0.15f, rgba?rgba[3]:1.0f};
 
 			offset = Round(curfont->GetPointSize() * fScale * 0.075f);
 
@@ -910,12 +910,12 @@ void RE_Font_DrawString(float ox, float oy, const char *psText, const float *rgb
 		case '^':
 			if ((MV_GetCurrentGameversion() == VERSION_1_02) && ntModDetected) {
 				vec4_t color;
-				colour = ColorIndexNT(*psText++);
+				colour = ColorIndexNT(*psText);
 				Com_Memcpy( color, g_color_table_nt[colour], sizeof( color ) );
 				color[3] = rgba[3];
 				RE_SetColor( color );
 			} else {
-				colour = ColorIndex(*psText++);
+				colour = ColorIndex(*psText);
 				if (!gbInShadow || (MV_GetCurrentGameversion() == VERSION_1_02)) {
 					vec4_t color;
 					Com_Memcpy( color, g_color_table[colour], sizeof( color ) );

@@ -235,6 +235,7 @@ static	cvar_t		*fs_assetspath;
 static	cvar_t		*fs_basegame;
 static	cvar_t		*fs_copyfiles;
 static	cvar_t		*fs_gamedirvar;
+static	cvar_t		*fs_extragamedirs;
 static	searchpath_t	*fs_searchpaths;
 static	int			fs_readCount;			// total bytes read
 static	int			fs_loadCount;			// total files read
@@ -3177,6 +3178,7 @@ FS_Startup
 */
 static void FS_Startup( const char *gameName ) {
 	const char *assetsPath;
+	char fs_gamedirLast[MAX_OSPATH];
 	// Silence clang, they do get initialized
 	char *mv_whitelist = NULL, *mv_blacklist = NULL, *mv_forcelist = NULL;
 	fileHandle_t f_w, f_b, f_f;
@@ -3192,6 +3194,7 @@ static void FS_Startup( const char *gameName ) {
 	fs_basegame = Cvar_Get ("fs_basegame", "", CVAR_INIT );
 	fs_homepath = Cvar_Get ("fs_homepath", Sys_DefaultHomePath(), CVAR_INIT | CVAR_VM_NOWRITE );
 	fs_gamedirvar = Cvar_Get ("fs_game", "", CVAR_INIT|CVAR_SYSTEMINFO );
+	fs_extragamedirs = Cvar_Get( "fs_extragames", "", CVAR_INIT );
 
 	assetsPath = Sys_DefaultAssetsPath();
 	fs_assetspath = Cvar_Get("fs_assetspath", assetsPath ? assetsPath : "", CVAR_INIT | CVAR_VM_NOWRITE);
@@ -3236,6 +3239,25 @@ static void FS_Startup( const char *gameName ) {
 			FS_AddGameDirectory(fs_homepath->string, fs_basegame->string, qfalse);
 		}
 	}
+	
+	//if we don't have the mod folder (fs_game), but have the extra mods folders (fs_extraGames),
+	//then the last one from the extra mods folders will be treated as the mod folder,
+	//so we have to store the last game directory and readd it later
+	Q_strncpyz(fs_gamedirLast, fs_gamedir, sizeof(fs_gamedirLast));
+	/* Read the fs_extragames after the base */
+	if ( fs_extragamedirs->string[0] ) {
+		int i;
+		Cmd_TokenizeString( fs_extragamedirs->string );
+		for( i=0; i<Cmd_Argc();i++) {
+			const char *newPath = Cmd_Argv( i );
+			if (fs_basepath->string[0]) {
+				FS_AddGameDirectory(fs_basepath->string, newPath, qfalse );
+			}
+			if (fs_homepath->string[0] && Q_stricmp(fs_homepath->string,fs_basepath->string)) {
+				FS_AddGameDirectory(fs_homepath->string, newPath, qfalse );
+			}
+		}
+	}
 
 	// check for additional game folder for mods
 	if ( fs_gamedirvar->string[0] && !Q_stricmp( gameName, BASEGAME ) && Q_stricmp( fs_gamedirvar->string, gameName ) ) {
@@ -3245,6 +3267,9 @@ static void FS_Startup( const char *gameName ) {
 		if (fs_homepath->string[0] && Q_stricmp(fs_homepath->string,fs_basepath->string)) {
 			FS_AddGameDirectory(fs_homepath->string, fs_gamedirvar->string, qfalse);
 		}
+	//readd the last game directory
+	} else {
+		Q_strncpyz(fs_gamedir, fs_gamedirLast, sizeof(fs_gamedir));
 	}
 
 	// add our commands
@@ -3690,6 +3715,7 @@ void FS_InitFilesystem( void ) {
 	Com_StartupVariable( "fs_game" );
 	Com_StartupVariable( "fs_copyfiles" );
 	Com_StartupVariable( "fs_restrict" );
+	Com_StartupVariable( "fs_extragames" );
 
 	// try to start up normally
 	FS_Startup( BASEGAME );

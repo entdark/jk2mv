@@ -773,21 +773,8 @@ AngleNormalize360
 returns angle normalized to the range [0 <= angle < 360]
 =================
 */
-static float Value360 = 360.0f;
 float AngleNormalize360 ( float angle ) {
-#if defined (_MSC_VER) && defined (ARCH_X86)
-    __asm	fld Value360
-    __asm	fld angle
-    __asm	fprem
-    __asm	fstp st(1)
-#elif defined (__linux__) && defined (ARCH_X86)
-    float result;
-    __asm__ volatile ( "fprem" : "=t" (result) :  "0" (angle) , "u" (Value360)
-       );
-    return result;
-#else 
     return (360.0/65536) * ((int)(angle*(65536/360.0)) & 65535);
-#endif
 }
 
 
@@ -799,23 +786,11 @@ returns angle normalized to the range [-180 < angle <= 180]
 =================
 */
 float AngleNormalize180 ( float angle ) {
-#if defined (_MSC_VER) && defined (ARCH_X86)
-	__asm	fld	Value360
-	__asm	fld angle
-	__asm	fprem1
-	__asm	fstp st(1)
-#elif defined (__linux__) && defined (ARCH_X86)
-    float result;
-    __asm__ volatile ( "fprem1" : "=t" (result) :  "0" (angle) , "u" (Value360)
-       );
-    return result;
-#else 
 	angle = AngleNormalize360( angle );
 	if ( angle > 180.0 ) {
 		angle -= 360.0;
 	}
 	return angle;
-#endif
 }
 
 
