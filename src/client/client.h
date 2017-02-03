@@ -150,6 +150,7 @@ typedef struct {
 	char			*mSharedMemory;
 
 	qboolean		highPrecision;
+	mvversion_t		moduleVersion[3]; // 0 - ui, 1 - cgame, 2 - game
 } clientActive_t;
 
 extern	clientActive_t		cl;

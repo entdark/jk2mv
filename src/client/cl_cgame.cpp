@@ -643,7 +643,7 @@ extern bool RicksCrazyOnServer;
 intptr_t CL_CgameSystemCalls(intptr_t *args) {
 	// fix syscalls from 1.02 to match 1.04
 	// this is a mess... can it be done better?
-	if (MV_GetCurrentGameversion() == VERSION_1_02) {
+	if (MV_GetCurrentGameversion() == VERSION_1_02 && (cl.moduleVersion[1] == VERSION_1_02 || cl.moduleVersion[1] == VERSION_UNDEF)) {
 		if (args[0] == 52)
 			args[0] = CG_ANYLANGUAGE_READCHARFROMSTRING;
 		else if (args[0] <= 300 && args[0] >= 286)
@@ -1346,27 +1346,14 @@ Ghoul2 Insert End
 
 	case MVAPI_GET_VERSION:
 		return (int)MV_GetCurrentGameversion();
-	
-	case MVAPI_MME_SEEKTIME:
-		return demoSeek( args[1] );
+
+	case MVAPI_SET_MODULE_VERSION:
+		cl.moduleVersion[1] = (mvversion_t)args[1];
+		return 0;
 	case MVAPI_KEY_GETOVERSTRIKEMODE:
 		return Key_GetOverstrikeMode();
 	case MVAPI_KEY_SETOVERSTRIKEMODE:
 		Key_SetOverstrikeMode( (qboolean)args[1] );
-		return 0;
-	case MVAPI_MME_CAPTURE:
-		re.Capture( (char *)VMA(1), VMF(2), VMF(3), VMF(4) );
-		re.CaptureStereo( (char *)VMA(1), VMF(2), VMF(3), VMF(4) );
-		S_MMERecord( (char *)VMA(1), 1.0f / VMF(2) );
-		return 0;
-	case MVAPI_MME_BLURINFO:
-		re.BlurInfo( (int *)VMA(1), (int *)VMA(2) );
-		return 0;
-	case MVAPI_MME_MUSIC:
-		S_MMEMusic( (const char *)VMA(1), VMF(2), VMF(3) );
-        return 0;
-	case MVAPI_MME_TIMEFRACTION:
-		re.TimeFraction(VMF(1));
 		return 0;
 	case MVAPI_R_RATIOFIX:
 		re.RatioFix(VMF(1));
@@ -1386,6 +1373,19 @@ Ghoul2 Insert End
 		return 0;
 	case MVAPI_HIGH_PRECISION:
 		cl.highPrecision = (qboolean)args[1];
+		return 0;
+	case MVAPI_MME_SEEKTIME:
+		return demoSeek(args[1]);
+	case MVAPI_MME_CAPTURE:
+		re.Capture((char *)VMA(1), VMF(2), VMF(3), VMF(4));
+		re.CaptureStereo((char *)VMA(1), VMF(2), VMF(3), VMF(4));
+		S_MMERecord((char *)VMA(1), 1.0f / VMF(2));
+		return 0;
+	case MVAPI_MME_MUSIC:
+		S_MMEMusic((const char *)VMA(1), VMF(2), VMF(3));
+		return 0;
+	case MVAPI_MME_TIMEFRACTION:
+		re.TimeFraction(VMF(1));
 		return 0;
 
 	default:
