@@ -8,21 +8,9 @@
 #include "../../mv_setup.h"
 #include "../ghoul2/G2_local.h"
 
-#define DEMOLISTSIZE 1024
-
-typedef struct {
-	char demoName[ MAX_OSPATH ];
-	char projectName[ MAX_OSPATH ];
-} demoListEntry_t;
-
-static demoListEntry_t	demoList[DEMOLISTSIZE];
-static int				demoListIndex, demoListCount;
-static demo_t			demo;
-static byte				demoBuffer[128*1024];
+demo_t demo;
 static entityState_t	demoNullEntityState;
 static playerState_t	demoNullPlayerState;
-static qboolean			demoPrecaching = qfalse;
-static int				demoNextNum = 0;
 
 static const char *demoHeader = Q3_VERSION " Demo";
 
@@ -335,8 +323,8 @@ void demoConvert( const char *oldName, const char *newBaseName, qboolean smoothe
 			// other commands
 			switch ( cmd ) {
 			default:
-				Com_Error (ERR_DROP,"CL_ParseServerMessage: Illegible server message\n");
-				break;			
+				Com_Printf(S_COLOR_RED"ERROR: CL_ParseServerMessage: Illegible server message\n");
+				goto conversionerror;		
 			case svc_nop:
 				break;
 			case svc_serverCommand:
@@ -558,7 +546,7 @@ void demoConvert( const char *oldName, const char *newBaseName, qboolean smoothe
 						const demoFrame_t *newFrame;
 						msg_t writeMsg;
 						// init the message
-						MSG_Init( &writeMsg, demoBuffer, sizeof (demoBuffer));
+						MSG_Init( &writeMsg, demo.buffer, sizeof (demo.buffer));
 						MSG_Clear( &writeMsg );
 						MSG_Bitstream( &writeMsg );
 						newFrame = &convert->frames[ writeIndex  % DEMOCONVERTFRAMES];
@@ -682,10 +670,10 @@ static void demoPlayForwardFrame( demoPlay_t *play ) {
 	demoFrame_t *copyFrame;
 
 	if (play->filePos + 4 > play->fileSize) {
-		if (mme_demoAutoNext->integer && demoNextNum && !demoPrecaching) {
+		if (mme_demoAutoNext->integer && demo.nextNum && !demo.precaching) {
 			CL_Disconnect_f();
 		}
-		if (mme_demoAutoQuit->integer && !demoPrecaching) {
+		if (mme_demoAutoQuit->integer && !demo.precaching) {
 			if (mme_demoAutoQuit->integer == 2)
 				Cbuf_ExecuteText( EXEC_APPEND, "quit" );
 			CL_Disconnect_f();
@@ -697,9 +685,9 @@ static void demoPlayForwardFrame( demoPlay_t *play ) {
 	play->filePos += 4;
 	FS_Read( &blockSize, 4, play->fileHandle );
 	blockSize = LittleLong( blockSize );
-	FS_Read( demoBuffer, blockSize, play->fileHandle );
+	FS_Read( demo.buffer, blockSize, play->fileHandle );
 	play->filePos += blockSize;
-	MSG_Init( &msg, demoBuffer, sizeof(demoBuffer) );
+	MSG_Init( &msg, demo.buffer, sizeof(demo.buffer) );
 	MSG_BeginReading( &msg );
 	msg.cursize = blockSize;
 	copyFrame = play->frame;
@@ -765,30 +753,30 @@ foundit:
 	}
 	return seekTime;
 }
-
 static int demoFindNext(const char *fileName) {
 	int i;
 	const int len = strlen(fileName);
 	char name[MAX_OSPATH], seekName[MAX_OSPATH];
 	qboolean tryAgain = qtrue;
 	if (isdigit(fileName[len-1]) && ((fileName[len-2] == '.'))) {
-		Com_sprintf(seekName, len-1+1, fileName);
-		demoNextNum = fileName[len-1] - '0';
+		Com_sprintf(seekName, len-1, fileName);
+		demo.currentNum = fileName[len-1] - '0';
 	} else if (isdigit(fileName[len-1]) && (isdigit(fileName[len-2]) && (fileName[len-3] == '.'))) {
-		Com_sprintf(seekName, len-2+1, fileName);
-		demoNextNum = (fileName[len-2] - '0')*10 + (fileName[len-1] - '0');
+		Com_sprintf(seekName, len-2, fileName);
+		demo.currentNum = (fileName[len-2] - '0')*10 + (fileName[len-1] - '0');
 	} else {
 		Com_sprintf(seekName, MAX_OSPATH, fileName);
+		demo.currentNum = demo.nextNum;
 	}
 tryAgain:
-	for (i = demoNextNum + 1; i < 99; i++) {
+	for (i = demo.currentNum + 1; i < 99; i++) {
 		Com_sprintf(name, MAX_OSPATH, "mmedemos/%s.%d.mme", seekName, i);
 		if (FS_FileExists(name)) {
 			Com_Printf("Next demo file: %s\n", name);
 			return i;
 		}
 	}
-	Com_sprintf(seekName, len+1, "%s", fileName);
+	Com_sprintf(seekName, len, "%s", fileName);
 	if (tryAgain) {
 		tryAgain = qfalse;
 		goto tryAgain;
@@ -809,8 +797,8 @@ static demoPlay_t *demoPlayOpen( const char* fileName ) {
 		return 0;
 	}
 	filePos = strlen( demoHeader );
-	i = FS_Read( &demoBuffer, filePos, fileHandle );
-	if ( i != filePos || Q_strncmp( (char *)demoBuffer, demoHeader, filePos )) {
+	i = FS_Read( &demo.buffer, filePos, fileHandle );
+	if ( i != filePos || Q_strncmp( (char *)demo.buffer, demoHeader, filePos )) {
 		Com_Printf("demo file %s is wrong version\n", fileName );
 		FS_FCloseFile( fileHandle );
 		return 0;
@@ -829,7 +817,7 @@ static demoPlay_t *demoPlayOpen( const char* fileName ) {
 		int blockSize, isFull, serverTime;
 		FS_Read( &blockSize, 4, fileHandle );
 		blockSize = LittleLong( blockSize );
-		if (blockSize > sizeof(demoBuffer)) {
+		if (blockSize > sizeof(demo.buffer)) {
 			Com_Printf( "Block too large to be read in.\n");
 			goto errorreturn;
 		}
@@ -837,8 +825,8 @@ static demoPlay_t *demoPlayOpen( const char* fileName ) {
 			Com_Printf( "Block would read past the end of the file.\n");
 			goto errorreturn;
 		}
-		FS_Read( demoBuffer, blockSize, fileHandle );
-		MSG_Init( &msg, demoBuffer, sizeof(demoBuffer) );
+		FS_Read( demo.buffer, blockSize, fileHandle );
+		MSG_Init( &msg, demo.buffer, sizeof(demo.buffer) );
 		MSG_BeginReading( &msg );
 		msg.cursize = blockSize;	
 		isFull = MSG_ReadBits( &msg, 1 );
@@ -865,7 +853,7 @@ static demoPlay_t *demoPlayOpen( const char* fileName ) {
 			play->clientNum = i;
 			break;
 		}
-	demoNextNum = demoFindNext(mme_demoFileName->string);
+	demo.nextNum = demoFindNext(mme_demoFileName->string);
 	return play;
 errorreturn:
 	Z_Free( play );
@@ -1081,12 +1069,11 @@ qboolean demoPlay( const char *fileName, qboolean del) {
 		Com_Memcpy( cl.gameState.stringOffsets, play->frame->string.offsets, sizeof( play->frame->string.offsets ));
 		Com_Memcpy( cl.gameState.stringData, play->frame->string.data, play->frame->string.used );
 		cl.gameState.dataCount = play->frame->string.used;
-		demoPrecaching = qfalse;
 		if (mme_demoPrecache->integer) {
-			demoPrecaching = qtrue;
+			demo.precaching = qtrue;
 			demoPrecache();
-			demoPrecaching = qfalse;
 		}
+		demo.precaching = qfalse;
 		CL_InitCGame();
 		cls.state = CA_ACTIVE;
 		demo.del = del;
@@ -1127,8 +1114,8 @@ void CL_DemoList_f(void) {
 	qboolean readName;
 	qboolean haveQuote;
 
-	demoListCount = 0;
-	demoListIndex = 0;
+	demo.list.count = 0;
+	demo.list.index = 0;
 	haveQuote = qfalse;
 
 	if (Cmd_Argc() < 2) {
@@ -1171,12 +1158,12 @@ void CL_DemoList_f(void) {
 			haveQuote = qfalse;
 			word[index++] = 0;
 			if (readName) {
-				Com_Memcpy( demoList[demoListCount].demoName, word, index );
+				Com_Memcpy( demo.list.entry[demo.list.count].demoName, word, index );
 				readName = qfalse;
 			} else {
-				if (demoListCount < DEMOLISTSIZE) {
-					Com_Memcpy( demoList[demoListCount].projectName, word, index );
-					demoListCount++;
+				if (demo.list.count < DEMOLISTSIZE) {
+					Com_Memcpy( demo.list.entry[demo.list.count].projectName, word, index );
+					demo.list.count++;
 				}
 				readName = qtrue;
 			}
@@ -1191,40 +1178,40 @@ void CL_DemoList_f(void) {
 		i++;
 	}
 	/* Handle a final line if any */
-	if (!readName && index && demoListCount < DEMOLISTSIZE) {
+	if (!readName && index && demo.list.count < DEMOLISTSIZE) {
 		word[index++] = 0;
-		Com_Memcpy( demoList[demoListCount].projectName, word, index );
-		demoListCount++;
+		Com_Memcpy( demo.list.entry[demo.list.count].projectName, word, index );
+		demo.list.count++;
 	}
 
 	FS_FreeFile ( buf );
-	demoListIndex = 0;
+	demo.list.index = 0;
 }
 
 void CL_DemoListNext_f(void) {
-	if ( demoListIndex < demoListCount ) {
-		const demoListEntry_t *entry = &demoList[demoListIndex++];
+	if ( demo.list.index < demo.list.count ) {
+		const demoListEntry_t *entry = &demo.list.entry[demo.list.index++];
 		Cvar_Set( "mme_demoStartProject", entry->projectName );
 		Com_Printf( "Starting demo %s with project %s\n",
 			entry->demoName, entry->projectName );
 		Cmd_ExecuteString( va( "demo \"%s\"\n", entry->demoName ));
-	} else if (demoListCount) {
-		Com_Printf( "DemoList:Finished playing %d demos\n", demoListCount );
-		demoListCount = 0;
-		demoListIndex = 0;
+	} else if (demo.list.count) {
+		Com_Printf( "DemoList:Finished playing %d demos\n", demo.list.count );
+		demo.list.count = 0;
+		demo.list.index = 0;
 		if ( mme_demoListQuit->integer )
 			Cbuf_ExecuteText( EXEC_APPEND, "quit" );
 	}
-	if (mme_demoAutoNext->integer && demoNextNum) {
+	if (mme_demoAutoNext->integer && demo.nextNum) {
 		char demoName[MAX_OSPATH];
-		if (demoNextNum == 1) {
+		if (demo.nextNum == 1) {
 			Com_sprintf(demoName, MAX_OSPATH, "%s.1", mme_demoFileName->string);
-		} else if (demoNextNum < 10) {
+		} else if (demo.nextNum < 10) {
 			Com_sprintf(demoName, strlen(mme_demoFileName->string)-1, mme_demoFileName->string);
-			strcat(demoName, va(".%d", demoNextNum));
-		} else if (demoNextNum < 100) {
+			strcat(demoName, va(".%d", demo.nextNum));
+		} else if (demo.nextNum < 100) {
 			Com_sprintf(demoName, strlen(mme_demoFileName->string)-2, mme_demoFileName->string);
-			strcat(demoName, va(".%d", demoNextNum));
+			strcat(demoName, va(".%d", demo.nextNum));
 		}
 		Cmd_ExecuteString(va("mmeDemo \"%s\"\n", demoName));
 	}

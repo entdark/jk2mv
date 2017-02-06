@@ -378,6 +378,7 @@ if (BuildMVMP)
 
 		"client/cl_demos.h"
 		"client/cl_demos.cpp"
+		"client/cl_demos_cut.cpp"
 		"client/cl_mme.cpp"
 	)
 	source_group("client" FILES ${MVMPClientFiles})

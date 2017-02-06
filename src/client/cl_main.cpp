@@ -3057,7 +3057,8 @@ void CL_Init( void ) {
 	// MME commands
 	Cmd_AddCommand ("mmeDemo", CL_MMEDemo_f);
 	Cmd_AddCommand ("demoList", CL_DemoList_f);
-	Cmd_AddCommand ("demoListNext", CL_DemoListNext_f );
+	Cmd_AddCommand ("demoCut", CL_DemoCut_f);
+	Cmd_AddCommand ("demoListNext", CL_DemoListNext_f);
 
 	CL_InitRef();
 
