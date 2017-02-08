@@ -511,6 +511,7 @@ qboolean FS_CopyFileAbsolute(char *fromOSPath, char *toOSPath) {
 	FILE	*f;
 	int		len;
 	byte	*buf;
+	char	temp[MAX_OSPATH];
 
 	Com_DPrintf("copy %s to %s\n", fromOSPath, toOSPath);
 
@@ -534,12 +535,16 @@ qboolean FS_CopyFileAbsolute(char *fromOSPath, char *toOSPath) {
 		Com_Error(ERR_FATAL, "Short read in FS_Copyfiles()\n");
 	fclose(f);
 
-	if (FS_CreatePath(toOSPath)) {
+	Com_sprintf(temp, sizeof(temp), "%s/%s", fs_gamedir, toOSPath);
+	FS_ReplaceSeparators(temp);
+	if (FS_CreatePath(temp)) {
+		Z_Free(buf);
 		return qfalse;
 	}
 
 	f = fopen(FS_BuildOSPath(fs_homepath->string, fs_gamedir, toOSPath), "wb");
 	if (!f) {
+		Z_Free(buf);
 		return qfalse;
 	}
 	if (fwrite(buf, 1, len, f) != len)

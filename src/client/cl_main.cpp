@@ -427,8 +427,8 @@ void CL_DemoCompleted( void ) {
 	//rww - The above code seems to just stick you in a no-menu state and you can't do anything there.
 	//I'm not sure why it ever worked in TA, but whatever. This code will bring us back to the main menu
 	//after a demo is finished playing instead.
-	CL_Disconnect_f();
 	MV_SetCurrentGameversion(VERSION_UNDEF); // Set the protocol to undefined after completing the demo.
+	CL_Disconnect_f();
 	S_StopAllSounds();
 	VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
 
@@ -495,11 +495,30 @@ bool demoCheckFor103 = false;	//When a protocol15 demo has been started, we need
 CL_WalkDemoExt
 ====================
 */
-static char *CL_WalkDemoExt(const char *arg, char *name, int *demofile) {
+static char *CL_WalkDemoExt(const char *arg, char *name, int *demofile, char *extForced) {
 	static char demoExt[8];
-	int i = 0;
+	int i = 0, pass = -1;
+	qboolean forcedDone = qfalse;
 	*demofile = 0;
+	if (extForced && *extForced) {
+		while (demo_protocols[i]) {
+			if (!Q_stricmp(va(".dm_%d", demo_protocols[i]), extForced)) {
+				/* check this ext first */
+				pass = i;
+				break;
+			}
+			i++;
+		}
+	}
+	/* reset if we did not find */
+	if (pass < 0)
+		i = 0;
 	while(demo_protocols[i]) {
+		/* ignore already checked forced ext */
+		if (i == pass && forcedDone) {
+			i++;
+			continue;
+		}
 		Com_sprintf (name, MAX_OSPATH, "demos/%s.dm_%d", arg, demo_protocols[i]);
 		FS_FOpenFileRead( name, demofile, qtrue );
 		if (*demofile) {
@@ -515,6 +534,12 @@ static char *CL_WalkDemoExt(const char *arg, char *name, int *demofile) {
 		}
 		else
 			Com_Printf("Not found: %s\n", name);
+		/* checked forced ext? start from 0 */
+		if (pass >= 0 && !forcedDone) {
+			forcedDone = qtrue;
+			i = 0;
+			continue;
+		}
 		i++;
 	}
 	return "";
@@ -535,7 +560,7 @@ qboolean CL_ServerVersionIs103 (const char *versionstr) {
 
 void CL_PlayDemo_f( void ) {
 	char		name[MAX_OSPATH], *testName, testNameActual[MAX_OSPATH];
-	char		*ext = NULL;
+	char		*ext = NULL, extForced[8];
 	qboolean	haveConvert, del = qfalse;
 	cvar_t		*fs_game;
 
@@ -552,6 +577,8 @@ void CL_PlayDemo_f( void ) {
 		return;
 	haveConvert = (qboolean)(mme_demoConvert->integer && !Q_stricmp( fs_game->string, "mme" ));
 	
+	Com_Memset(extForced, 0, sizeof(extForced));
+
 	if (del) {
 		ext = strstr(Cmd_Argv(1), ".mme");
 		if (!ext) {
@@ -577,6 +604,7 @@ void CL_PlayDemo_f( void ) {
 			} else {
 				Q_strncpyz(testNameActual, Cmd_Argv(1), sizeof(testNameActual));
 			}
+			Q_strncpyz(extForced, ext, sizeof(extForced));
 		}
 	} else {
 		Q_strncpyz(testNameActual, Cmd_Argv(1), sizeof(testNameActual));
@@ -590,6 +618,7 @@ void CL_PlayDemo_f( void ) {
 	// check for an extension .dm_?? (?? is protocol)
 	ext = testName + strlen(testName) - 6;
 	if ((strlen(testName) > 6) && (ext[0] == '.') && ((ext[1] == 'd') || (ext[1] == 'D')) && ((ext[2] == 'm') || (ext[2] == 'M')) && (ext[3] == '_')) {
+		Q_strncpyz(extForced, ext, sizeof(extForced));
 		ext[0] = 0;
 	}
 
@@ -601,14 +630,14 @@ void CL_PlayDemo_f( void ) {
 		if (FS_FileExists( name )) {
 			char empty1[MAX_OSPATH];
 			int empty2;
-			CL_WalkDemoExt( testName, empty1, &empty2 ); //do that to set demo15detected if needed
+			CL_WalkDemoExt( testName, empty1, &empty2, extForced ); //do that to set demo15detected if needed
 			if (demoPlay( name, del))
 				return;
 		}
 	}
 
 	MV_SetCurrentGameversion(VERSION_UNDEF); //reset
-	CL_WalkDemoExt(testName, name, &clc.demofile);
+	CL_WalkDemoExt(testName, name, &clc.demofile, extForced);
 	if (!clc.demofile) {
 		Com_Error( ERR_DROP, "couldn't open %s", name);
 		return;
@@ -848,6 +877,7 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	if (clc.newDemoPlayer) {
 		demoStop( );
 	}
+	MV_SetCurrentGameversion(VERSION_UNDEF); // Set the protocol to undefined after completing the demo.
 
 	CL_BlacklistWriteCloseFile();
 
