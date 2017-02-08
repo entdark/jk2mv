@@ -982,7 +982,6 @@ window_t WIN_Init( const windowDesc_t *windowDesc, glconfig_t *glConfig )
 			default:
 				break;
 		}
-		DragAcceptFiles(info.info.win.window, TRUE);
 	}
 #endif
 

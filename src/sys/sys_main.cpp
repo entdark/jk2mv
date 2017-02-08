@@ -303,9 +303,6 @@ int main(int argc, char* argv[]) {
 	NET_Init();
 
 #ifndef DEDICATED
-#ifdef WIN32
-	DragAcceptFiles(GetActiveWindow(), TRUE);
-#endif
 	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 	SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 #endif
