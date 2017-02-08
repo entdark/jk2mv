@@ -52,7 +52,7 @@ tryDefaultLanguage:
 	while (ext[i]) {
 		COM_StripExtension(sfileName, fileName, sizeof(sfileName));
 		COM_DefaultExtension(fileName, MAX_QPATH, ext[i]);
-		FS_FOpenFileReadHash(fileName, &f, qfalse, NULL, qtrue);
+		FS_FOpenFileReadHash(fileName, &f, qtrue, NULL, qtrue);
 		if (f)
 			break;
 		i++;
@@ -106,7 +106,7 @@ static openSound_t *S_StreamOpen( const char *fileName, int dataSize ) {
 	int fileSize = 0;
 	openSound_t *open;
 
-	fileSize = FS_FOpenFileRead( fileName, &fileHandle, qfalse );
+	fileSize = FS_FOpenFileRead( fileName, &fileHandle, qtrue );
 	if ( fileSize <= 0 || fileHandle <= 0)
 		return 0;
 	open = (openSound_t *)Z_Malloc( sizeof( openSound_t ) + dataSize, TAG_SND_RAWDATA );
