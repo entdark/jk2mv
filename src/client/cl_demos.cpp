@@ -5,7 +5,7 @@
 #include "client.h"
 #include "../server/server.h"
 #include "cl_demos.h"
-#include "../../mv_setup.h"
+#include "mv_setup.h"
 #include "../ghoul2/G2_local.h"
 
 demo_t demo;

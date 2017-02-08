@@ -326,9 +326,9 @@ void S_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxH
 		q->hasOrigin = qfalse;
 	}
 	entry = sfxEntries + sfxHandle;
-	if ((strstr(strlwr(entry->name), "altcharge") != NULL)) {
+	if ((strstr(Q_strlwr(entry->name), "altcharge") != NULL)) {
 		q->interrupt = 2;
-	} else if ((strstr(strlwr(entry->name), "falling") != NULL)) {
+	} else if ((strstr(Q_strlwr(entry->name), "falling") != NULL)) {
 		q->interrupt = 1;
 	}
 }

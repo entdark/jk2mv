@@ -823,19 +823,19 @@ static void IN_ProcessEvents( void )
 					}
 				}
 				break;
-
-			case SDL_SYSWMEVENT:
 #if defined (WIN32) && !defined (DEDICATED)
+			case SDL_SYSWMEVENT:
 				extern void Sys_HandleEvent(HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam);
 				Sys_HandleEvent(e.syswm.msg->msg.win.hwnd, e.syswm.msg->msg.win.msg, e.syswm.msg->msg.win.wParam, e.syswm.msg->msg.win.lParam);
-#endif
 				break;
-
+#endif
 			case SDL_DROPFILE:
+			{
 				/* never called on Windows */
 				extern bool isSupported(const char *filename, dropLogic_t *out);
 				extern void switchMod(void);
-				{dropLogic_t drop;
+
+				dropLogic_t drop;
 				char *fileName = e.drop.file;
 				if (!fileName)
 					break;
@@ -843,7 +843,7 @@ static void IN_ProcessEvents( void )
 					SDL_free(e.drop.file);
 					break;
 				}
-				char cmd[MAX_PATH + 16] = { 0 };
+				char cmd[MAX_OSPATH + 16] = { 0 };
 				Q_strcat(cmd, sizeof(cmd), drop.cmd);
 				Q_strcat(cmd, sizeof(cmd), " \"");
 				Q_strcat(cmd, sizeof(cmd), fileName);
@@ -855,9 +855,9 @@ static void IN_ProcessEvents( void )
 				}
 				Cbuf_ExecuteText(EXEC_APPEND, cmd);
 				Cbuf_ExecuteText(EXEC_APPEND, "\n");
-				SDL_free(e.drop.file);}
+				SDL_free(e.drop.file);
 				break;
-
+			}
 			default:
 				break;
 		}
