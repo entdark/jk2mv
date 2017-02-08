@@ -4,6 +4,9 @@
 #include "../sys/sys_local.h"
 #include "../renderer/tr_public.h"
 #include "sdl_icon.h"
+#if defined(_WIN32)
+#include <shellapi.h>
+#endif
 
 #define CLIENT_WINDOW_TITLE "JK2MV"
 
@@ -979,6 +982,7 @@ window_t WIN_Init( const windowDesc_t *windowDesc, glconfig_t *glConfig )
 			default:
 				break;
 		}
+		DragAcceptFiles(info.info.win.window, TRUE);
 	}
 #endif
 

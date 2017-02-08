@@ -178,3 +178,10 @@ void *		WIN_GL_GetProcAddress( const char *proc );
 void		GLimp_Minimize(void);
 
 uint8_t ConvertUTF32ToExpectedCharset( uint32_t utf32 );
+
+typedef struct dropLogic_s {
+	bool(*isSupported)(const char *filename);
+	char *cmd;
+	char *args;
+	bool allowMulti;
+} dropLogic_t;

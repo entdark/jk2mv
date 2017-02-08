@@ -22,6 +22,16 @@
 #include "../sys/sys_public.h"
 #include "con_local.h"
 
+#ifdef WIN32
+extern HANDLE mutex;
+
+UINT MSH_BROADCASTARGS;
+
+extern void Sys_RegisterFileTypes(TCHAR *program);
+extern bool Sys_IsOtherInstanceRunning(void);
+extern bool Sys_CopySharedData(void *data, size_t size);
+#endif
+
 cvar_t *com_minimized;
 cvar_t *com_unfocused;
 cvar_t *com_maxfps;
@@ -219,6 +229,7 @@ void Sys_SigHandler(int signal) {
 }
 
 #if defined(_MSC_VER) && !defined(DEDICATED)
+#include <shellapi.h>
 #define argv __argv
 #define argc __argc
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
@@ -238,6 +249,23 @@ int main(int argc, char* argv[]) {
 	CON_CreateConsoleWindow();
 #endif
 	CON_Init();
+	
+#if defined (WIN32) && !defined (DEDICATED)
+	TCHAR *cmdline = GetCommandLine();
+	MSH_BROADCASTARGS = RegisterWindowMessage(L"MSH_BROADCASTARGS");
+	if (Sys_IsOtherInstanceRunning()) {
+		TCHAR *bcArgs = wcsstr(cmdline, L"+demo");
+		//close this instance only if it's trying to open demos
+		if (bcArgs) {
+			Sys_CopySharedData(bcArgs, (wcslen(bcArgs)+1)*sizeof(TCHAR));
+			PostMessage(HWND_BROADCAST, MSH_BROADCASTARGS, 0, 0);
+			Sleep(1337);
+			ReleaseMutex(mutex);
+			CloseHandle(mutex);
+			return 0;
+		}
+	}
+#endif
 
 	// get the initial time base
 	Sys_Milliseconds();
@@ -264,7 +292,23 @@ int main(int argc, char* argv[]) {
 
 	Com_Init(commandLine);
 
+#if defined (WIN32) && !defined (DEDICATED)
+	WCHAR path[512];
+	if (GetModuleFileName(NULL, path, sizeof(path))) {
+		Sys_RegisterFileTypes(path);
+	}
+//	Com_Printf("MSH_BROADCASTARGS: %u\n", MSH_BROADCASTARGS);
+#endif
+
 	NET_Init();
+
+#ifndef DEDICATED
+#ifdef WIN32
+	DragAcceptFiles(GetActiveWindow(), TRUE);
+#endif
+	SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+	SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+#endif
 
 	// main game loop
 	while (1) {

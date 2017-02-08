@@ -498,3 +498,267 @@ void Sys_SnapVector(vec3_t vec) {
 
 }
 #endif
+
+#include <string>
+using namespace std;
+
+#define PROGRAM_MUTEX L"jk2mvmp"
+HANDLE mutex;
+
+typedef struct {
+	wstring extension;
+	wstring desc;
+} extensionsTable_t;
+
+static extensionsTable_t et[] = {
+	//should we reg it? q3mme and other mme mods use it too
+//	{".mme", "MovieMaker's Edition Demo"},
+	{L".dm_15", L"Jedi Outcast Demo (v1.02/1.03)"},
+	{L".dm_16", L"Jedi Outcast Demo (v1.04)"},
+};
+
+TCHAR *GetStringRegKey(HKEY hkey, const TCHAR *valueName) {
+	if (!hkey) {
+		return NULL;
+	}
+    static WCHAR szBuffer[512];
+    DWORD dwBufferSize = sizeof(szBuffer);
+    LSTATUS nError = RegQueryValueEx(hkey, valueName, 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
+    if (ERROR_SUCCESS == nError) {
+        return szBuffer;
+    }
+    return NULL;
+}
+
+bool AddRegistry(const HKEY key, const TCHAR *subkey, const TCHAR *value, const TCHAR *valueName = NULL) {
+	Com_DPrintf(S_COLOR_YELLOW"AddRegistry(%u,%s,%s,%s)\n", key, subkey, value, valueName ? valueName : L"NULL");
+	HKEY hkey;
+	LSTATUS nError = RegOpenKeyEx(key, subkey, 0, KEY_READ, &hkey);
+	if (nError != ERROR_SUCCESS && nError != ERROR_FILE_NOT_FOUND) {
+		Com_DPrintf(S_COLOR_RED"RegOpenKeyEx(%u,%s,%s) error: %d\n", key, subkey, value, nError);
+		return false;
+	}
+	const TCHAR *setValue = GetStringRegKey(hkey, valueName);
+	RegCloseKey(hkey);
+	//ignore the same value
+	if (!setValue || wcsicmp(setValue, value)) {
+		nError = RegCreateKeyEx(key, subkey, 0, 0, 0, KEY_ALL_ACCESS, 0, &hkey, 0);
+		if (nError == ERROR_SUCCESS) {
+			RegSetValueEx(hkey, valueName, 0, REG_SZ, (BYTE*)value, (wcslen(value)+1)*sizeof(TCHAR));
+			RegCloseKey(hkey);
+			return true;
+		} else {
+			Com_DPrintf(S_COLOR_RED"RegCreateKeyEx(%u,%s,%s) error: %d\n", key, subkey, value, nError);
+		}
+	}
+	return false;
+}
+
+void Sys_RegisterFileTypes(TCHAR *program) {
+	wstring action=L"jk2mvmp";
+	bool refresh = false; //once true - forever true
+	for (int i = 0; i < ARRAY_LEN(et); i++) {
+		wstring app = program + wstring(L" +set fs_game \"mme\" +demo \"%1\" del");
+		wstring extension = et[i].extension;
+		wstring desc = et[i].desc;
+		wstring icon = extension + wstring(L"\\DefaultIcon");
+
+		wstring path=extension+
+					L"\\shell\\"+
+					action+
+					L"\\command\\";
+	
+		//using | to be able to call all 3 functions even if true got returned
+		//register the filetype extension
+		refresh |= AddRegistry(HKEY_CLASSES_ROOT, extension.c_str(), desc.c_str())
+		//register application association
+		| AddRegistry(HKEY_CLASSES_ROOT, path.c_str(), app.c_str())
+		//register icon for the filetype
+		| AddRegistry(HKEY_CLASSES_ROOT, icon.c_str(), program);
+	}
+	if (refresh) {
+		SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+	}
+}
+
+bool Sys_IsOtherInstanceRunning(void) {
+	mutex = CreateMutex(NULL, TRUE, PROGRAM_MUTEX);
+	//prevent multiple instances if we are opening a demo
+	if (ERROR_ALREADY_EXISTS == GetLastError()) {
+		return true;
+	}
+	//in the other case just open another sintance
+	return false;
+}
+
+#define SHAREDDATA_SIZE 512
+#define MAPNAME PROGRAM_MUTEX"_Map"
+HANDLE hMapFile;
+bool Sys_CopySharedData(void *data, size_t size) {
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = CreateFileMapping(
+					INVALID_HANDLE_VALUE,    // use paging file
+					NULL,                    // default security
+					PAGE_READWRITE,          // read/write access
+					0,                       // maximum object size (high-order DWORD)
+					SHAREDDATA_SIZE,         // maximum object size (low-order DWORD)
+					MAPNAME); 
+	if (hMapFile == NULL) {
+		hMapFile = OpenFileMapping(
+					FILE_MAP_ALL_ACCESS,   // read/write access
+					FALSE,                 // do not inherit the name
+					MAPNAME);  
+		if (hMapFile == NULL) {
+			return false;
+		}
+	}
+
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile,   // handle to map object
+						FILE_MAP_ALL_ACCESS, // read/write permission
+						0,
+						0,
+						SHAREDDATA_SIZE);
+	if (pBuf == NULL) {
+		return false;
+	}
+
+	CopyMemory((PVOID)pBuf, data, size);
+	UnmapViewOfFile(pBuf);
+//	CloseHandle(hMapFile);
+	return true;
+}
+
+void *Sys_GetSharedData(void) {
+	static CHAR ret[SHAREDDATA_SIZE];
+	HANDLE hMapFile;
+	LPCTSTR pBuf;
+
+	hMapFile = OpenFileMapping(
+					FILE_MAP_ALL_ACCESS,   // read/write access
+					FALSE,                 // do not inherit the name
+					MAPNAME);              // name of mapping object
+	if (hMapFile == NULL) {
+		return NULL;
+	}
+
+	pBuf = (LPTSTR)MapViewOfFile(hMapFile, // handle to map object
+				FILE_MAP_ALL_ACCESS,  // read/write permission
+				0,
+				0,
+				SHAREDDATA_SIZE);
+	if (pBuf == NULL) {
+		CloseHandle(hMapFile);
+		return NULL;
+	}
+
+	wcstombs(ret, pBuf, sizeof(ret));
+	UnmapViewOfFile(pBuf);
+	CloseHandle(hMapFile);
+	return ret;
+}
+
+void switchMod(void) {
+	cvar_t *fs_game = Cvar_FindVar("fs_game");
+	if (!(fs_game && !Q_stricmp(fs_game->string, "mme"))) {
+		Com_Printf("Switching mod\n");
+		Cvar_Set("fs_game", "mme");
+		Cbuf_ExecuteText(EXEC_APPEND, "vid_restart\n");
+	}
+}
+
+static bool fileHasExt(const char *filename, const char *ext) {
+	const char *fileExt = filename + (strlen(filename) - strlen(ext))*sizeof(char);
+	if (!Q_stricmp(fileExt, ext))
+		return true;
+	return false;
+}
+
+const char *demoExt[] = {
+	".dm_15",
+	".dm_16",
+	".mme",
+	NULL,
+};
+static bool isDemo(const char *filename) {
+	int i = 0;
+	while (demoExt[i]) {
+		if (fileHasExt(filename, demoExt[i]))
+			return true;
+		i++;
+	}
+	return false;
+}
+
+const char *configExt = ".cfg";
+static bool isConfig(const char *filename) {
+	if (fileHasExt(filename, configExt))
+		return true;
+	return false;
+}
+
+//entTODO: implement config and other files support
+static dropLogic_t dropList[] = {
+	{isDemo, "demo", "del", false},
+//	{isConfig, "exec", NULL, true},
+};
+
+bool isSupported(const char *filename, dropLogic_t *out) {
+	size_t len = ARRAY_LEN(dropList);
+	for (size_t i = 0; i < len; i++) {
+		if (dropList[i].isSupported(filename)) {
+			*out = dropList[i];
+			return true;
+		}
+	}
+	out = NULL;
+	return false;
+}
+
+extern UINT MSH_BROADCASTARGS;
+extern void *Sys_GetSharedData(void);
+extern void Com_ParseCommandLine(char *cmdLine);
+extern qboolean Com_AddStartupCommands(void);
+void Sys_HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if (uMsg == MSH_BROADCASTARGS) {
+		char *args = (char *)Sys_GetSharedData();
+		if (args) {
+			if (strstr(args, "+demo")) {
+				switchMod();
+			}
+			Com_ParseCommandLine(args);
+			Com_AddStartupCommands();
+//			Cbuf_ExecuteText(EXEC_APPEND, args);
+		}
+		SwitchToThisWindow(hWnd, FALSE);
+	 } else if (uMsg == WM_DROPFILES) {
+		HDROP hDrop = (HDROP)wParam;
+		TCHAR szFileName[MAX_PATH];
+		DWORD dwCount = DragQueryFile(hDrop, 0xFFFFFFFF, szFileName, MAX_PATH);
+		char fileName[MAX_PATH]; //expand size? but TCHAR can be just char if it's not unicode :s
+		wcstombs(fileName, szFileName, sizeof(fileName));
+		for (DWORD i = 0; i < dwCount; i++) {
+			DragQueryFile(hDrop, 0, szFileName, MAX_PATH);
+			dropLogic_t drop;
+			if (!isSupported(fileName, &drop))
+				continue;
+			char cmd[MAX_PATH+16] = {0};
+			Q_strcat(cmd, sizeof(cmd), drop.cmd);
+			Q_strcat(cmd, sizeof(cmd), " \"");
+			Q_strcat(cmd, sizeof(cmd), fileName);
+			Q_strcat(cmd, sizeof(cmd), "\" ");
+			if (drop.args)
+				Q_strcat(cmd, sizeof(cmd), drop.args);
+			if (!Q_stricmp(drop.cmd, "demo")) {
+				switchMod();
+			}
+			Cbuf_ExecuteText(EXEC_APPEND, cmd);
+			Cbuf_ExecuteText(EXEC_APPEND, "\n");
+			if (!drop.allowMulti)
+				break;
+		}
+		DragFinish(hDrop);
+		SwitchToThisWindow(hWnd, FALSE);
+	}
+}
