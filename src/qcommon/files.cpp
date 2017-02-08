@@ -1310,10 +1310,10 @@ separate file or a ZIP file.
 extern qboolean		com_fullyInitialized;
 
 int FS_FOpenFileRead(const char *filename, fileHandle_t *file, qboolean uniqueFILE) {
-	return FS_FOpenFileReadHash(filename, file, uniqueFILE, NULL);
+	return FS_FOpenFileReadHash(filename, file, uniqueFILE, NULL, qfalse);
 }
 
-int FS_FOpenFileReadHash(const char *filename, fileHandle_t *file, qboolean uniqueFILE, unsigned long *filehash) {
+int FS_FOpenFileReadHash(const char *filename, fileHandle_t *file, qboolean uniqueFILE, unsigned long *filehash, qboolean ignoreWarnings) {
 	searchpath_t	*search;
 	char			*netpath;
 	pack_t			*pak;
@@ -1458,7 +1458,7 @@ int FS_FOpenFileReadHash(const char *filename, fileHandle_t *file, qboolean uniq
 #ifndef DEDICATED
 #ifndef FINAL_BUILD
 					// Check for unprecached files when in game but not in the menus
-					if((cls.state == CA_ACTIVE) && !(cls.keyCatchers & KEYCATCH_UI))
+					if((cls.state == CA_ACTIVE) && !(cls.keyCatchers & KEYCATCH_UI) && !ignoreWarnings)
 					{
 						Com_Printf(S_COLOR_YELLOW "WARNING: File %s not precached\n", filename);
 					}
@@ -3838,7 +3838,7 @@ int FS_FOpenFileByModeHash( const char *qpath, fileHandle_t *f, fsMode_t mode, u
 
 	switch( mode ) {
 	case FS_READ:
-		r = FS_FOpenFileReadHash( qpath, f, qtrue, hash );
+		r = FS_FOpenFileReadHash( qpath, f, qtrue, hash, qfalse );
 		break;
 	case FS_WRITE:
 		*f = FS_FOpenFileWrite( qpath );
