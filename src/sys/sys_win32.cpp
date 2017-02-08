@@ -559,7 +559,7 @@ void Sys_RegisterFileTypes(TCHAR *program) {
 	bool refresh = false; //once true - forever true
 	for (int i = 0; i < ARRAY_LEN(et); i++) {
 		wstring app = program + wstring(L" +set fs_game \"mme\" +demo \"%1\" del");
-		wstring extension = et[i].extension;
+		wstring extension = L"Software\\Classes\\" + et[i].extension;
 		wstring desc = et[i].desc;
 		wstring icon = extension + wstring(L"\\DefaultIcon");
 
@@ -570,11 +570,11 @@ void Sys_RegisterFileTypes(TCHAR *program) {
 	
 		//using | to be able to call all 3 functions even if true got returned
 		//register the filetype extension
-		refresh |= AddRegistry(HKEY_CLASSES_ROOT, extension.c_str(), desc.c_str())
+		refresh |= AddRegistry(HKEY_CURRENT_USER, extension.c_str(), desc.c_str())
 		//register application association
-		| AddRegistry(HKEY_CLASSES_ROOT, path.c_str(), app.c_str())
+		| AddRegistry(HKEY_CURRENT_USER, path.c_str(), app.c_str())
 		//register icon for the filetype
-		| AddRegistry(HKEY_CLASSES_ROOT, icon.c_str(), program);
+		| AddRegistry(HKEY_CURRENT_USER, icon.c_str(), program);
 	}
 	if (refresh) {
 		SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
