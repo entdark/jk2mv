@@ -625,7 +625,7 @@ void CL_PlayDemo_f( void ) {
 	Cvar_Set( "mme_demoFileName", testName );
 
 	MV_SetCurrentGameversion(VERSION_UNDEF); //reset
-	if ( haveConvert ) {
+	if ( haveConvert && !del ) {
 		Com_sprintf (name, MAX_OSPATH, "mmedemos/%s.mme", testName );
 		if (FS_FileExists( name )) {
 			char empty1[MAX_OSPATH];
@@ -877,7 +877,6 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	if (clc.newDemoPlayer) {
 		demoStop( );
 	}
-	MV_SetCurrentGameversion(VERSION_UNDEF); // Set the protocol to undefined after completing the demo.
 
 	CL_BlacklistWriteCloseFile();
 
@@ -887,7 +886,7 @@ void CL_Disconnect( qboolean showMainMenu ) {
 
 	Cvar_Set("timescale", "1");	//in case we dropped from a timescaled demo, ensure we are at normal speed again.
 
-	SCR_StopCinematic ();
+	SCR_StopCinematic();
 	S_ClearSoundBuffer();
 
 	// send a disconnect message to the server

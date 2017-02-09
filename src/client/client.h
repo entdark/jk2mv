@@ -150,7 +150,6 @@ typedef struct {
 	char			*mSharedMemory;
 
 	qboolean		highPrecision;
-	mvversion_t		moduleVersion[3]; // 0 - ui, 1 - cgame, 2 - game
 } clientActive_t;
 
 extern	clientActive_t		cl;
@@ -354,6 +353,7 @@ typedef struct {
 	qboolean ignoreNextDownloadList;
 
 	mvfix_t fixes;
+	mvversion_t moduleVersion[3]; // 0 - ui, 1 - cgame, 2 - game
 } clientStatic_t;
 
 #define	CON_TEXTSIZE	131072 // increased in jk2mv
