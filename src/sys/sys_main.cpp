@@ -265,6 +265,22 @@ int main(int argc, char* argv[]) {
 			return 0;
 		}
 	}
+	//it's a unique instance so reset current directory to the program path
+	//if it was called to open external demo
+	TCHAR path[512] = { 0 }, *sep = NULL, *lastSep = NULL;
+	DWORD gotPath = GetModuleFileName(NULL, path, sizeof(path));
+	if (gotPath) {
+		sep = wcschr(path, L'\\');
+		do {
+			lastSep = sep;
+			sep = wcschr(sep+1, L'\\');
+		} while (sep);
+		//cut off the executable name
+		if (lastSep && lastSep[0] && (lastSep+1) && lastSep[1]) {
+			*(lastSep+1) = L'\0';
+		}
+		SetCurrentDirectory(path);
+	}
 #endif
 
 	// get the initial time base
@@ -293,7 +309,7 @@ int main(int argc, char* argv[]) {
 	Com_Init(commandLine);
 
 #if defined (WIN32) && !defined (DEDICATED)
-	WCHAR path[512];
+	//get the path once again since we removed executable above in SetCurrentDirectory
 	if (GetModuleFileName(NULL, path, sizeof(path))) {
 		Sys_RegisterFileTypes(path);
 	}
