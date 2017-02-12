@@ -554,8 +554,21 @@ demo <demoname>
 ====================
 */
 
-qboolean CL_ServerVersionIs103 (const char *versionstr) {
+qboolean CL_ServerVersionIs103(const char *versionstr) {
 	return strstr(versionstr, "v1.03") ? qtrue : qfalse;
+}
+
+void CL_CheckFor103(const int num, const char *str) {
+	if (demoCheckFor103 && num == CS_SERVERINFO) {
+		//This is the big serverinfo string containing the value of the "version" cvar of the server.
+		//If we are about to play a demo, we can use this information to ascertain whether this demo was recorded on
+		//a 1.03 server.
+		if (CL_ServerVersionIs103(Info_ValueForKey(str, "version"))) {
+			//A 1.03 demo - set the proper game version internally so parsing snapshots etc won't fail
+			MV_SetCurrentGameversion(VERSION_1_03);
+		}
+		demoCheckFor103 = false; //No need to check this again while playing the demo.
+	}
 }
 
 void CL_PlayDemo_f( void ) {

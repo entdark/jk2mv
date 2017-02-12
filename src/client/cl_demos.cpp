@@ -67,6 +67,7 @@ static void demoFrameUnpack( msg_t *msg, demoFrame_t *oldFrame, demoFrame_t *new
 	/* Extract config strings */
 	while ( 1 ) {
 		int i, num = MSG_ReadShort( msg );
+		const char *s;
 		if (!isDelta ) {
 			for (i = last;i<num;i++)
 				newFrame->string.offsets[i] = 0;
@@ -75,7 +76,9 @@ static void demoFrameUnpack( msg_t *msg, demoFrame_t *oldFrame, demoFrame_t *new
 				demoFrameAddString( &newFrame->string, i, oldFrame->string.data + oldFrame->string.offsets[i] );
 		}
 		if (num < MAX_CONFIGSTRINGS) {
-			demoFrameAddString( &newFrame->string, num, MSG_ReadBigString( msg ) );
+			s = MSG_ReadBigString( msg );
+			CL_CheckFor103(num, s);
+			demoFrameAddString( &newFrame->string, num, s );
 		} else {
 			break;
 		}
@@ -404,16 +407,7 @@ void demoConvert( const char *oldName, const char *newBaseName, qboolean smoothe
 						const char *s;
 						num = MSG_ReadShort( &oldMsg );
 						s = MSG_ReadBigString( &oldMsg );
-						if (demoCheckFor103 && num == CS_SERVERINFO) {
-							//This is the big serverinfo string containing the value of the "version" cvar of the server.
-							//If we are about to play a demo, we can use this information to ascertain whether this demo was recorded on
-							//a 1.03 server.
-							if (CL_ServerVersionIs103(Info_ValueForKey(s, "version"))) {
-								//A 1.03 demo - set the proper game version internally so parsing snapshots etc won't fail
-								MV_SetCurrentGameversion(VERSION_1_03);
-							}
-							demoCheckFor103 = false; //No need to check this again while playing the demo.
-						}
+						CL_CheckFor103(num, s);
 						demoFrameAddString( &workFrame->string, num, s );
 					} else if ( cmd == svc_baseline ) {
 						int num = MSG_ReadBits( &oldMsg, GENTITYNUM_BITS );
