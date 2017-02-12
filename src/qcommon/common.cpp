@@ -2874,8 +2874,12 @@ float Q_acos(float c) {
 
 // multiprotocol support
 mvversion_t glbpro;
+mvversion_t glbpro_last;
 
 void MV_SetCurrentGameversion(mvversion_t version) {
+	if (glbpro != VERSION_UNDEF) {
+		glbpro_last = glbpro;
+	}
 	glbpro = version;
 
 	if ( com_fullyInitialized )
@@ -2887,6 +2891,10 @@ void MV_SetCurrentGameversion(mvversion_t version) {
 
 mvversion_t MV_GetCurrentGameversion() {
 	return glbpro;
+}
+
+mvversion_t MV_GetLastValidGameversion() {
+	return glbpro_last;
 }
 
 mvprotocol_t MV_GetCurrentProtocol() {

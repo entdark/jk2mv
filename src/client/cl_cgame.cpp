@@ -599,6 +599,7 @@ void CL_ShutdownCGame( void ) {
 	VM_Free( cgvm );
 	cgvm = NULL;
 	cls.fixes = MVFIX_NONE;
+	cls.moduleVersion[1] = VERSION_UNDEF;
 #ifdef _DONETPROFILE_
 	ClReadProf().ShowTotals();
 #endif
@@ -643,7 +644,7 @@ extern bool RicksCrazyOnServer;
 intptr_t CL_CgameSystemCalls(intptr_t *args) {
 	// fix syscalls from 1.02 to match 1.04
 	// this is a mess... can it be done better?
-	if (MV_GetCurrentGameversion() == VERSION_1_02 && (cl.moduleVersion[1] == VERSION_1_02 || cl.moduleVersion[1] == VERSION_UNDEF)) {
+	if (MV_GetCurrentGameversion() == VERSION_1_02 && (cls.moduleVersion[1] == VERSION_1_02 || cls.moduleVersion[1] == VERSION_UNDEF)) {
 		if (args[0] == 52)
 			args[0] = CG_ANYLANGUAGE_READCHARFROMSTRING;
 		else if (args[0] <= 300 && args[0] >= 286)
@@ -1348,7 +1349,7 @@ Ghoul2 Insert End
 		return (int)MV_GetCurrentGameversion();
 
 	case MVAPI_SET_MODULE_VERSION:
-		cl.moduleVersion[1] = (mvversion_t)args[1];
+		cls.moduleVersion[1] = (mvversion_t)args[1];
 		return 0;
 	case MVAPI_KEY_GETOVERSTRIKEMODE:
 		return Key_GetOverstrikeMode();

@@ -1032,6 +1032,7 @@ typedef enum {
 
 void MV_SetCurrentGameversion(mvversion_t version);
 mvversion_t MV_GetCurrentGameversion();
+mvversion_t MV_GetLastValidGameversion();
 mvprotocol_t MV_GetCurrentProtocol();
 
 void MV_CopyStringWithColors( const char *src, char *dst, int dstSize, int nonColors );

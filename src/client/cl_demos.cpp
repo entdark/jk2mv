@@ -1052,11 +1052,16 @@ qboolean demoPlay( const char *fileName, qboolean del) {
 		Com_EventLoop();
 		// starting to load a map so we get out of full screen ui mode
 		Cvar_Set("r_uiFullScreen", "0");
+		//finish cgame with last game version
+		mvversion_t version = MV_GetCurrentGameversion();
+		MV_SetCurrentGameversion(MV_GetLastValidGameversion());
 		// flush client memory and start loading stuff
 		// this will also (re)load the UI
 		// if this is a local client then only the client part of the hunk
 		// will be cleared, note that this is done after the hunk mark has been set
 		CL_FlushMemory();
+		//reset back to new detected game version
+		MV_SetCurrentGameversion(version);
 		// initialize the CGame
 		cls.cgameStarted = qtrue;
 		// Create the gamestate
