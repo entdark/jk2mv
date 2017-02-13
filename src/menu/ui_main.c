@@ -4272,7 +4272,10 @@ static qboolean UI_DeferMenuScript ( char **args )
 //SMod - demo browsing routines
 static void UI_RunDemo(){
 	menuDef_t*	menu;
-	if (!Q_stricmp(uiInfo.demoList[uiInfo.demoIndex],"/..")) {
+
+	if (!uiInfo.demoList[uiInfo.demoIndex]) {
+		return;
+	} else if (!Q_stricmp(uiInfo.demoList[uiInfo.demoIndex],"/..")) {
 		//we go back in directory hierarchy
 		int i = strlen(uiCurrentDemoFolder)-1;
 		for( ; uiCurrentDemoFolder[i] != '/'; i--);
