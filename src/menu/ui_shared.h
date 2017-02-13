@@ -397,8 +397,8 @@ typedef struct {
   float			bias;
   int				realTime;
   int				frameTime;
-	int				cursorx;
-	int				cursory;
+	float				cursorx;
+	float			cursory;
 	qboolean	debug;
 
   cachedAssets_t Assets;
@@ -408,6 +408,8 @@ typedef struct {
   qhandle_t gradientImage;
   qhandle_t cursor;
 	float FPS;
+	
+	float widthRatioCoef;	//to make 2Ds be not stretched
 
 } displayContextDef_t;
 

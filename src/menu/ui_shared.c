@@ -4413,9 +4413,9 @@ void Item_Model_Paint(itemDef_t *item)
 	w = item->window.rect.w-2;
 	h = item->window.rect.h-2;
 
-	refdef.x = x * DC->xscale;
+	refdef.x = (x+w/2.0f-(w/2.0f)*DC->widthRatioCoef) * DC->xscale;
 	refdef.y = y * DC->yscale;
-	refdef.width = w * DC->xscale;
+	refdef.width = w*DC->widthRatioCoef * DC->xscale;
 	refdef.height = h * DC->yscale;
 
 	DC->modelBounds( item->asset, mins, maxs );
@@ -4434,7 +4434,7 @@ void Item_Model_Paint(itemDef_t *item)
 	{
 		origin[0] = item->textscale;
 	}
-	refdef.fov_x = (modelPtr->fov_x) ? modelPtr->fov_x : w;
+	refdef.fov_x = (modelPtr->fov_x) ? modelPtr->fov_x : w*DC->widthRatioCoef;
 	refdef.fov_y = (modelPtr->fov_y) ? modelPtr->fov_y : h;
 
 	refdef.fov_x = 45;

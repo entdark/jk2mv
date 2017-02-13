@@ -85,8 +85,10 @@ LIBEXPORT intptr_t QDECL vmMain(int command, int arg0, int arg1, int arg2, int a
 int MVAPI_Init(int apilevel) {
 	if (!((int)trap_Cvar_VariableValue("mv_apienabled")) || apilevel < MV_APILEVEL) {
 		// using the mvmenu without jk2mv is useless
-		trap_Error("This mvmenu version requires JK2MV " MV_MIN_VERSION "\n");
+		trap_Error("This mvmenu version requires JK2MV " MV_MIN_VERSION " (%i level).\n", apilevel);
 	}
+
+	trap_MVAPI_HighPrecision(qtrue);
 
 	// always using the newest api internally.
 	return MV_APILEVEL;
@@ -514,7 +516,7 @@ void _UI_Refresh( int realtime )
 	// draw cursor
 	UI_SetColor( NULL );
 	if (Menu_Count() > 0) {
-		UI_DrawHandlePic( uiInfo.uiDC.cursorx, uiInfo.uiDC.cursory, 48, 48, uiInfo.uiDC.Assets.cursor);
+		UI_DrawHandlePic( uiInfo.uiDC.cursorx, uiInfo.uiDC.cursory, 48*uiInfo.uiDC.widthRatioCoef, 48, uiInfo.uiDC.Assets.cursor);
 	}
 
 #ifndef NDEBUG
@@ -6814,6 +6816,8 @@ void _UI_Init( qboolean inGameLoad ) {
 		// no wide screen
 		uiInfo.uiDC.bias = 0;
 	}
+	uiInfo.uiDC.widthRatioCoef = (float)(SCREEN_WIDTH * uiInfo.uiDC.glconfig.vidHeight) / (float)(SCREEN_HEIGHT * uiInfo.uiDC.glconfig.vidWidth);
+	trap_MVAPI_R_RatioFix(uiInfo.uiDC.widthRatioCoef);
 
 
   //UI_Load();
@@ -6995,7 +6999,7 @@ UI_MouseEvent
 void _UI_MouseEvent( int dx, int dy )
 {
 	// update mouse screen position
-	uiInfo.uiDC.cursorx += dx;
+	uiInfo.uiDC.cursorx += dx*uiInfo.uiDC.widthRatioCoef;
 	if (uiInfo.uiDC.cursorx < 0)
 		uiInfo.uiDC.cursorx = 0;
 	else if (uiInfo.uiDC.cursorx > SCREEN_WIDTH)

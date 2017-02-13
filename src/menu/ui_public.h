@@ -5,6 +5,7 @@
 
 #include <time.h>
 #include "../qcommon/q_shared.h"
+#include "../api/mvapi.h"
 
 #define UI_API_15_VERSION	6
 #define UI_API_16_VERSION	7

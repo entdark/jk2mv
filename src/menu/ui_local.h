@@ -1021,6 +1021,10 @@ int trap_FS_GetDLList(dlfile_t *files, int maxfiles);
 qboolean trap_FS_RMDLPrefix(const char *qpath);
 qboolean trap_UI_DeleteDLFile(const dlfile_t *file);
 
+//MVAPI
+void trap_MVAPI_R_RatioFix( float ratio );
+void trap_MVAPI_HighPrecision( qboolean enabled );
+
 //
 // ui_addbots.c
 //

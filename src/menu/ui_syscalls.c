@@ -460,3 +460,10 @@ qboolean trap_UI_DeleteDLFile(const dlfile_t *file) {
 	return engine_syscall(UI_MV_DELDLFILE, file);
 }
 
+// new MVAPI+MME syscalls
+void trap_MVAPI_R_RatioFix( float ratio ) {
+	engine_syscall( MVAPI_R_RATIOFIX, PASSFLOAT(ratio) );
+}
+void trap_MVAPI_HighPrecision( qboolean enabled ) {
+	engine_syscall( MVAPI_HIGH_PRECISION, enabled );
+}

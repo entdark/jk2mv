@@ -1180,6 +1180,13 @@ Ghoul2 Insert End
 
 	case MVAPI_GET_VERSION:
 		return (int)MV_GetCurrentGameversion();
+	
+	case MVAPI_R_RATIOFIX:
+		re.RatioFix(VMF(1));
+		return 0;
+	case MVAPI_HIGH_PRECISION:
+		cl.highPrecision = (qboolean)args[1];
+		return 0;
 
 	default:
 		Com_Error( ERR_DROP, "Bad UI system trap: %i", args[0] );
