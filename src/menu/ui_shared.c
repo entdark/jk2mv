@@ -516,6 +516,7 @@ qboolean String_Parse(char **p, const char **out) {
 	return qfalse;
 }
 
+static qboolean isBack = qfalse;
 /*
 =================
 PC_String_Parse
@@ -529,6 +530,19 @@ qboolean PC_String_Parse(int handle, const char **out)
 	if (!trap_PC_ReadToken(handle, &token))
 	{
 		return qfalse;
+	}
+	
+	if (!Q_stricmp(UI_Cvar_VariableString("fs_game"), "mme")) {
+		if (!Q_stricmp(token.string, "@MENUS_PLAY")
+			|| !Q_stricmp(token.string, "@MENUS_NEW")
+			|| !Q_stricmp(token.string, "@MENUS2_PLAY")
+			|| !Q_stricmp(token.string, "@MENUS2")) {
+			strcpy(token.string, "Demos");
+		} else if (!Q_stricmp(token.string, "@MENUS_START_PLAYING_NOW")) {
+			strcpy(token.string, "@MENUS_PLAY_BACK_A_RECORDED");
+		} else if (!Q_stricmp(token.string, "@MENUS_BACK")) {
+			isBack = qtrue;
+		}
 	}
 
 #ifdef MV_UI_PATCHMENU // JK2MV: Avoid editing the menu-files -> joinserver.menu
@@ -594,7 +608,14 @@ qboolean PC_Script_Parse(int handle, const char **out) {
 	while ( 1 ) {
 		if (!trap_PC_ReadToken(handle, &token))
 			return qfalse;
-
+		if (!Q_stricmp(UI_Cvar_VariableString("fs_game"), "mme")) {
+			if (!Q_stricmp(token.string, "multiplayermenu") && isBack) {
+				strcpy(token.string, "mainMenu");
+				isBack = qfalse;
+			} else if (!Q_stricmp(token.string, "multiplayermenu")) {
+				strcpy(token.string, "demo");
+			}
+		}
 		if (Q_stricmp(token.string, "}") == 0) {
 			*out = String_Alloc(script);
 			return qtrue;
