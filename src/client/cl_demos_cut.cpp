@@ -405,12 +405,9 @@ qboolean demoCut(const char *oldName, int startTime, int endTime) {
 	char			newName[MAX_OSPATH];
 	int				buf;
 	int				readGamestate = 0;
-	int				i;
 	demoPlay_t		*play = demo.play.handle;
 	qboolean		ret = qfalse;
 	int				framesSaved = 0;
-	char			newGameDir[MAX_QPATH];
-	char			next;
 	char			*ext;
 	mvprotocol_t	protocol;
 	if (!play) {
