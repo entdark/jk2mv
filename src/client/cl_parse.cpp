@@ -393,8 +393,6 @@ CL_ParseGamestate
 ==================
 */
 
-extern bool demoCheckFor103;
-
 void CL_ParseGamestate( msg_t *msg ) {
 	int				i;
 	entityState_t	*es;

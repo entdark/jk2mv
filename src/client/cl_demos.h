@@ -113,5 +113,3 @@ typedef struct {
 } demo_t;
 
 extern demo_t demo;
-
-extern bool demoCheckFor103;
