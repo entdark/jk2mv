@@ -1652,6 +1652,7 @@ void CL_SetCGameTime( void ) {
 		Com_Error( ERR_DROP, "CL_SetCGameTime: !cl.snap.valid" );
 	}
 
+	cl.serverTimeLast = cl.serverTime;
 	// allow pause in single player
 	if ( sv_paused->integer && cl_paused->integer && com_sv_running->integer ) {
 		// paused
@@ -1663,7 +1664,6 @@ void CL_SetCGameTime( void ) {
 	}
 	cl.oldFrameServerTime = cl.snap.serverTime;
 
-	cl.serverTimeLast = cl.serverTime;
 	// get our current view of time
 
 	if ( clc.demoplaying && cl_freezeDemo->integer ) {

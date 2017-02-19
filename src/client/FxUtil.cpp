@@ -344,7 +344,7 @@ CParticle *FX_AddParticle( CCloud *effectCloud, vec3_t org, vec3_t vel, vec3_t a
 							int deathID, int impactID,
 							int killTime, qhandle_t shader, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding effects when the system is paused
 		return 0;
 	}
@@ -426,7 +426,7 @@ CParticle *FX_AddParticle( CCloud *effectCloud, CFxBoltInterface *obj, vec3_t ve
 							float rotation, float rotationDelta,
 							int killTime, qhandle_t shader, int flags = 0, bool objCopy = false )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding effects when the system is paused
 		return 0;
 	}
@@ -513,7 +513,7 @@ CLine *FX_AddLine( CCloud *effectCloud, vec3_t start, vec3_t end, float size1, f
 									vec3_t sRGB, vec3_t eRGB, float rgbParm,
 									int killTime, qhandle_t shader, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding new effects when the system is paused
 		return 0;
 	}
@@ -586,7 +586,7 @@ CElectricity *FX_AddElectricity( CCloud *effectCloud, vec3_t start, vec3_t end, 
 									vec3_t sRGB, vec3_t eRGB, float rgbParm,
 									float chaos, int killTime, qhandle_t shader, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding new effects when the system is paused
 		return 0;
 	}
@@ -668,7 +668,7 @@ CTail *FX_AddTail( CCloud *effectCloud, vec3_t org, vec3_t vel, vec3_t accel,
 							int deathID, int impactID,
 							int killTime, qhandle_t shader, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding effects when the system is paused
 		return 0;
 	}
@@ -762,7 +762,7 @@ CCylinder *FX_AddCylinder( CCloud *effectCloud, vec3_t start, vec3_t normal,
 							vec3_t rgb1, vec3_t rgb2, float rgbParm,
 							int killTime, qhandle_t shader, int flags )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding new effects when the system is paused
 		return 0;
 	}
@@ -862,7 +862,7 @@ CEmitter *FX_AddEmitter( CCloud *effectCloud, vec3_t org, vec3_t vel, vec3_t acc
 								float density, float variance,
 								int killTime, qhandle_t model, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding effects when the system is paused
 		return 0;
 	}
@@ -946,7 +946,7 @@ CLight *FX_AddLight( CCloud *effectCloud, vec3_t org, float size1, float size2, 
 							vec3_t rgb1, vec3_t rgb2, float rgbParm,
 							int killTime, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding effects when the system is paused
 		return 0;
 	}
@@ -1007,7 +1007,7 @@ COrientedParticle *FX_AddOrientedParticle( CCloud *effectCloud, vec3_t org, vec3
 						int deathID, int impactID,
 						int killTime, qhandle_t shader, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding effects when the system is paused
 		return 0;
 	}
@@ -1089,7 +1089,7 @@ CPoly *FX_AddPoly( CCloud *effectCloud, vec3_t *verts, vec2_t *st, int numVerts,
 							vec3_t rotationDelta, float bounce, int motionDelay,
 							int killTime, qhandle_t shader, int flags )
 {
-	if ( theFxHelper.mFrameTime < 0 || !verts )
+	if ( theFxHelper.mFrameTime <= 0 || !verts )
 	{ // disallow adding effects when the system is paused or the user doesn't pass in a vert array
 		return 0;
 	}
@@ -1163,7 +1163,7 @@ CBezier *FX_AddBezier( vec3_t start, vec3_t end,
 								vec3_t sRGB, vec3_t eRGB, float rgbParm,
 								int killTime, qhandle_t shader, int flags )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding new effects when the system is paused
 		return 0;
 	}
@@ -1235,7 +1235,7 @@ CBezier *FX_AddBezier( vec3_t start, vec3_t end,
 CFlash *FX_AddFlash( CCloud *effectCloud, vec3_t origin, vec3_t sRGB, vec3_t eRGB, float rgbParm,
 						int killTime, qhandle_t shader, int flags = 0 )
 {
-	if ( theFxHelper.mFrameTime < 0 )
+	if ( theFxHelper.mFrameTime <= 0 )
 	{ // disallow adding new effects when the system is paused
 		return 0;
 	}
