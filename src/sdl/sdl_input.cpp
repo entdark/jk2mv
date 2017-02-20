@@ -888,7 +888,6 @@ static void IN_ProcessEvents( void )
 #endif
 			case SDL_DROPFILE:
 			{
-				/* never called on Windows */
 				dropLogic_t drop;
 				char *fileName = e.drop.file;
 				if (!fileName)
