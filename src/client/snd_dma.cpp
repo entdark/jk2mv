@@ -67,21 +67,16 @@ void S_DMAInit(void) {
 }
 
 void S_DMA_Update( float scale ) {
-	int				sane, count;
-	float			ma, op;
+	int				ma, count;
 	static int		lastPos;
 	int				thisPos;
 	int				lastWrite, lastRead;
 	int				bufSize, bufDone;
 	int				speed;
 	int				buf[MIX_SIZE*2];
-	int				thisTime;
-	static int		lastTime = 0;
 
 	if (!dmaInit)
 		return;
-
-	thisTime = Com_Milliseconds();
 
 	bufSize = dma.samples >> (dma.channels-1);
 
@@ -100,22 +95,14 @@ void S_DMA_Update( float scale ) {
 //	Com_Printf( "lastRead %d lastWrite %d done %d\n", lastRead, lastWrite, bufDone );
 	lastPos = thisPos;
 
-	sane = thisTime - lastTime;
-	if (sane<11) {
-		sane = 11;			// 85hz
-	}
-	ma = s_mixahead->value * dma.speed;
-	op = 0.05f + sane*dma.speed*0.01f;
-	if (op < ma) {
-		ma = op;
-	}
+	ma = s_mixahead->value * dma.speed * 5;
 
 	count = lastRead;
-	if (bufDone + count < ma) {
-		count = ma - bufDone + 1;
-	} else if (bufDone + count > bufSize) {
-		count = bufSize - bufDone;
-	}
+//	if (bufDone + count < ma) {
+//		count = ma - bufDone + 1;
+//	} else if (bufDone + count > bufSize) {
+//		count = bufSize - bufDone;
+//	}
 
 	if (count > sizeof(buf) / (2 * sizeof(int))) {
 		count = sizeof(buf) / (2 * sizeof(int));
@@ -144,8 +131,7 @@ void S_DMA_Update( float scale ) {
 	SNDDMA_BeginPainting ();
 	S_MixClipOutput(count, buf, (short *)dma.buffer, dmaWrite, bufSize-1);
 	SNDDMA_Submit ();
-	dmaWrite += count;
+	dmaWrite += count-ma;
 	if (dmaWrite >= bufSize)
 		dmaWrite -= bufSize;
-	lastTime = thisTime;
 }
