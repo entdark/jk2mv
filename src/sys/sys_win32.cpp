@@ -593,7 +593,7 @@ bool Sys_IsOtherInstanceRunning(void) {
 }
 
 #define SHAREDDATA_SIZE 512
-#define MAPNAME PROGRAM_MUTEX"_Map"
+#define MAPNAME PROGRAM_MUTEX L"_Map"
 HANDLE hMapFile;
 bool Sys_CopySharedData(void *data, size_t size) {
 	HANDLE hMapFile;
