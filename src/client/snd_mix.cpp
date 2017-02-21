@@ -214,7 +214,7 @@ static void S_MixChannel( mixChannel_t *ch, int speed, int count, int *output ) 
 	const short *data;
 	float volume;
 
-	if (ch->entChan == CHAN_VOICE)
+	if (ch->entChan == CHAN_VOICE && s_volumeVoice->integer >= 0)
 		volume = s_volumeVoice->value * (1 << MIX_SHIFT) * 0.5;
 	else
 		volume = s_volume->value * (1 << MIX_SHIFT) * 0.5;

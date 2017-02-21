@@ -828,8 +828,8 @@ void Con_DrawSolidConsole( float frac ) {
 				if ( use102color && ntModDetected && ( (text[x]>>8)&127 ) != currentColor ) {
 					currentColor = (text[x]>>8)&127;
 					re.SetColor( g_color_table_nt[currentColor] );
-				} else if ( !ntModDetected && ( (text[x]>>8)&7 ) != currentColor ) {
-					currentColor = (text[x]>>8)&7;
+				} else if ( !ntModDetected && ( (text[x]>>8)&15 ) != currentColor ) {
+					currentColor = (text[x]>>8)&15;
 					re.SetColor( g_color_table[currentColor] );
 				}
 				SCR_DrawSmallChar( (x+1)*con.charWidth, y, text[x] & 0xff );

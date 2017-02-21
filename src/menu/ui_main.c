@@ -3825,7 +3825,7 @@ static void UI_MakeModFolders(void) {
 	memset(mod_folders, 0, sizeof(mod_folders));
 
 	trap_Cvar_VariableStringBuffer("fs_game", game, sizeof(game));
-	if (!stricmp(game, "")) {
+	if (!Q_stricmp(game, "")) {
 	} else {
 		Com_sprintf(mod_folders[count++], MAX_QPATH, game);
 	}

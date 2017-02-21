@@ -111,7 +111,7 @@ void S_Init( void ) {
 	Com_Printf("\n------- sound initialization -------\n");
 
 	s_volume = Cvar_Get ("s_volume", "0.8", CVAR_ARCHIVE);
-	s_volumeVoice= Cvar_Get ("s_volumeVoice", "0.8", CVAR_ARCHIVE);
+	s_volumeVoice= Cvar_Get ("s_volumeVoice", "-1", CVAR_ARCHIVE);
 	s_musicVolume = Cvar_Get ("s_musicvolume", "0.5", CVAR_ARCHIVE);
 
 	s_language = Cvar_Get("s_language","english",CVAR_ARCHIVE | CVAR_NORESTART);
