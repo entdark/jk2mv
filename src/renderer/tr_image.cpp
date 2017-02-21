@@ -3263,8 +3263,6 @@ void	R_SkinList_f( void ) {
 	ri.Printf (PRINT_ALL, "------------------\n");
 }
 
-#endif // !DEDICATED
-
 
 /*
 ============================================================================
@@ -3630,3 +3628,5 @@ skip_shot:
 		free(row_pointers);
 	return writeData.bufferUsed;
 }
+
+#endif // !DEDICATED

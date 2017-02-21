@@ -880,7 +880,7 @@ static void IN_ProcessEvents( void )
 					}
 				}
 				break;
-#if defined (WIN32) && !defined (DEDICATED)
+#ifdef WIN32
 			case SDL_SYSWMEVENT:
 				extern void Sys_HandleEvent(HWND hWnd, UINT uMsg, WPARAM  wParam, LPARAM lParam);
 				Sys_HandleEvent(e.syswm.msg->msg.win.hwnd, e.syswm.msg->msg.win.msg, e.syswm.msg->msg.win.wParam, e.syswm.msg->msg.win.lParam);

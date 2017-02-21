@@ -1285,12 +1285,12 @@ Ghoul2 Insert End
 	ri.Cmd_AddCommand( "gfxinfo", GfxInfo_f );
 	ri.Cmd_AddCommand( "r_we", R_WorldEffect_f);
 	ri.Cmd_AddCommand( "imagecacheinfo", RE_RegisterImages_Info_f);
-#endif
-	ri.Cmd_AddCommand( "modellist", R_Modellist_f);
-	ri.Cmd_AddCommand( "modelcacheinfo", RE_RegisterModels_Info_f);
 	
 	ri.Cmd_AddCommand( "capturestop", R_MME_Shutdown );
 	ri.Cmd_AddCommand( "capturestopstereo", R_MME_ShutdownStereo );
+#endif
+	ri.Cmd_AddCommand( "modellist", R_Modellist_f);
+	ri.Cmd_AddCommand( "modelcacheinfo", RE_RegisterModels_Info_f);
 
 	r_consoleFont = ri.Cvar_Get("r_consoleFont", "1", CVAR_ARCHIVE | CVAR_GLOBAL);
 	r_consoleFont->modified = qtrue;
@@ -1369,8 +1369,10 @@ void R_Init( void ) {
 
 	R_RatioFix(1.0f);
 
+#ifndef DEDICATED
 	R_MME_Init();
 	R_MME_InitStereo();
+#endif
 
 	max_polys = r_maxpolys->integer;
 	if (max_polys < MAX_POLYS)
@@ -1408,11 +1410,7 @@ void R_Init( void ) {
 		G2VertSpaceServer = new CMiniHeap(G2_VERT_SPACE_SERVER_SIZE * 1024);
 	}
 #endif
-
-	int	err = qglGetError();
-	if ( err != GL_NO_ERROR )
-		ri.Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
-#endif
+	
 	{
 		// create 2 pixel buffer objects, you need to delete them when program exits.
 		// glBufferDataARB with NULL pointer reserves only memory space.
@@ -1425,6 +1423,10 @@ void R_Init( void ) {
 
 		qglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
 	}
+	int	err = qglGetError();
+	if ( err != GL_NO_ERROR )
+		ri.Printf (PRINT_ALL, "glGetError() = 0x%x\n", err);
+#endif
 	ri.Printf( PRINT_ALL, "----- finished R_Init -----\n" );
 }
 

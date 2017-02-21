@@ -1962,8 +1962,6 @@ Ghoul2 Insert End
 #ifndef DEDICATED
 // tr_surfacesprites
 void RB_DrawSurfaceSprites( shaderStage_t *stage, shaderCommands_t *input);
-#endif
-#endif //TR_LOCAL_H
 
 
 //MME
@@ -1993,3 +1991,6 @@ int R_MME_MultiPassNextStereo( );
 void R_MME_DoNotTake( );
 
 void R_MME_TimeFraction(float timeFraction);
+
+#endif
+#endif //TR_LOCAL_H

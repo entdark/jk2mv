@@ -22,7 +22,7 @@
 #include "../sys/sys_public.h"
 #include "con_local.h"
 
-#ifdef WIN32
+#if defined (WIN32) && !defined (DEDICATED)
 extern HANDLE mutex;
 
 UINT MSH_BROADCASTARGS;

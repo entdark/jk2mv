@@ -499,6 +499,7 @@ void Sys_SnapVector(vec3_t vec) {
 }
 #endif
 
+#ifndef DEDICATED
 #include <string>
 using namespace std;
 
@@ -707,3 +708,4 @@ void Sys_HandleEvent(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		SwitchToThisWindow(hWnd, FALSE);
 	}*/
 }
+#endif
