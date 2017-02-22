@@ -330,6 +330,8 @@ void S_StartSound(vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxH
 		q->interrupt = 2;
 	} else if ((strstr(Q_strlwr(entry->name), "falling") != NULL)) {
 		q->interrupt = 1;
+	} else {
+		q->interrupt = 0;
 	}
 }
 

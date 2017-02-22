@@ -276,9 +276,9 @@ void S_MixChannels( mixChannel_t *ch, int channels, int speed, int count, int *o
 		scanChan = ch;
 		for (scanCount = channels;scanCount > 0;scanCount--, scanChan++ ) {
             /* We have to interrupt alt charging weapon sounds and falling */
-			if ( q->entNum == scanChan->entNum
-				&& ((scanChan->entChan == CHAN_WEAPON && q->interrupt == 2)
-				|| q->interrupt == 1)) {
+			if ( scanChan->handle && scanChan->entNum == q->entNum
+				&& ((scanChan->entChan == CHAN_WEAPON && q->entChan == CHAN_WEAPON && scanChan->interrupt == 2)
+				|| scanChan->interrupt == 1)) {
 				scanChan->handle = 0;
 				break;
 			}
@@ -314,6 +314,7 @@ void S_MixChannels( mixChannel_t *ch, int channels, int speed, int count, int *o
 				free->index = 0;
 				VectorCopy( q->origin, free->origin );
 				free->hasOrigin = q->hasOrigin;
+				free->interrupt = q->interrupt;
 				freeLeft--;
 				free++;
 				break;
